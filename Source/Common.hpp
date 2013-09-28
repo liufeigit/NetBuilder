@@ -9,11 +9,9 @@
 **/
 
 // OpenGL
-#define GL3_PROTOTYPES 1
-#include <gl.h>
-#include "GL/glew.h"
-#include "GL/wglew.h"
-#pragma comment(lib, "glew32.lib")
+#include <windows.h>
+#include <GL/glew.h>
+#include <GL/glut.h>
 
 // STL
 #include <iostream>
@@ -28,7 +26,7 @@
 
 int main() {
 
-	cNetBuilder *NetBuilder = new cNetBuilder();
+	Designer::cNetBuilder *NetBuilder = new Designer::cNetBuilder();
 
 	NetBuilder->Run();
 

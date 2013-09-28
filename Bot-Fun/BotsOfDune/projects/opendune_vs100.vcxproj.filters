@@ -510,11 +510,19 @@
     <ClCompile Include="..\src\video\video_win32.c">
       <Filter>src\video</Filter>
     </ClCompile>
-    <ClInclude Include="..\src\ScS\Bot.hpp">
+    <ClInclude Include="..\src\ScS\BotEngine.hpp">
+      <Filter>src\ScS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ScS\BotInterface.h">
       <Filter>src\ScS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\source.list" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\ScS\BotEngine.cpp">
+      <Filter>src\ScS</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

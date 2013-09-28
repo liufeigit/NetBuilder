@@ -138,10 +138,12 @@
       <ObjectFileName>$(IntDir)src\</ObjectFileName>
     </ClCompile>
     <ClInclude Include="..\src\scenario.h" />
+    <ClCompile Include="..\src\ScS\BotEngine.cpp" />
     <ClCompile Include="..\src\sprites.c">
       <ObjectFileName>$(IntDir)src\</ObjectFileName>
     </ClCompile>
-    <ClInclude Include="..\src\ScS\Bot.hpp" />
+    <ClInclude Include="..\src\ScS\BotEngine.hpp" />
+    <ClInclude Include="..\src\ScS\BotInterface.h" />
     <ClInclude Include="..\src\sprites.h" />
     <ClCompile Include="..\src\string.c">
       <ObjectFileName>$(IntDir)src\</ObjectFileName>

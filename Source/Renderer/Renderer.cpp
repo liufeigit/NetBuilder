@@ -73,8 +73,7 @@ namespace Renderer {
 		return true;
 	}
 
-	void cOpenGl::PrepareScene(CDC *pDC)
-	{
+	void cOpenGl::PrepareScene(CDC *pDC) {
 		glClearColor (1.0, 1.0, 1.0, 0.0);
 
 		m_pProgram = new CGLProgram();
