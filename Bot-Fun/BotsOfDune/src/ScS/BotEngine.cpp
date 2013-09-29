@@ -133,6 +133,31 @@ extern "C" void Bot_Unit_Destroyed( Unit *pAttacker, Unit *pDestroyed ) {
 	g_BotEngine->Bot_Unit_Destroyed( pAttacker, pDestroyed );
 }
 
+cBot::cBot( std::string pName ) {
+
+	mName = pName;
+	mNetwork = new cNetwork();
+
+	mSelfDeath = 0;
+	mKills = 0;
+	mDeaths = 0;
+
+	Load();
+}
+
+cBot::~cBot() {
+
+	Save();
+	delete mNetwork;
+}
+
+void cBot::Load() {
+
+}
+
+void cBot::Save() {
+
+}
 
 cBotEngine::cBotEngine() {
 
@@ -144,12 +169,34 @@ cBotEngine::~cBotEngine() {
 
 void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
 
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
+
+	}
 }
 
 void cBotEngine::Bot_Unit_Destroyed( Unit *pAttacker, Unit *pDestroyed ) {
 
 	// Unit destroyed without attacker
-	if( pAttacker == 0 ) {
 
+
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
+
+		// Was this the destroyed unit?
+		if( (*BotIT)->mUnit == pDestroyed ) {
+
+			++(*BotIT)->mDeaths;
+			(*BotIT)->mUnit = 0;
+
+			// No attacker?
+			if( pAttacker == 0 ) {
+				++(*BotIT)->mSelfDeath;
+				return;
+			}
+		}
+
+		// Was this the attacking unit?
+		if( (*BotIT)->mUnit == pAttacker ) {
+			++(*BotIT)->mKills;
+		}
 	}
 }
