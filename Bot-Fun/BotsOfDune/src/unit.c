@@ -34,6 +34,7 @@
 #include "timer.h"
 #include "tools.h"
 
+#include "ScS/BotInterface.h"
 
 static uint32 s_tickUnitMovement  = 0; /*!< Indicates next time the Movement function is executed. */
 static uint32 s_tickUnitRotation  = 0; /*!< Indicates next time the Rotation function is executed. */
@@ -460,6 +461,9 @@ Unit *Unit_Create(uint16 index, uint8 typeID, uint8 houseID, tile32 position, in
 	Unit_UpdateMap(1, u);
 
 	Unit_SetAction(u, (houseID == g_playerHouseID) ? ui->o.actionsPlayer[3] : ui->actionAI);
+
+	// Tell the bot engine a unit has spawned
+	Bot_Spawn_Unit( u );
 
 	return u;
 }
@@ -1305,11 +1309,13 @@ bool Unit_Move(Unit *unit, uint16 distance)
 	if (!Tile_IsValid(newPosition)) {
 		if (!ui->flags.mustStayInMap) {
 			Unit_Remove(unit);
+			Bot_Unit_Destroyed( 0, unit );
 			return true;
 		}
 
 		if (unit->o.flags.s.byScenario && unit->o.linkedID == 0xFF && unit->o.script.variables[4] == 0) {
 			Unit_Remove(unit);
+			Bot_Unit_Destroyed( 0, unit );
 			return true;
 		}
 

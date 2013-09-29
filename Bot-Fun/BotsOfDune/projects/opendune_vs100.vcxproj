@@ -138,7 +138,9 @@
       <ObjectFileName>$(IntDir)src\</ObjectFileName>
     </ClCompile>
     <ClInclude Include="..\src\scenario.h" />
-    <ClCompile Include="..\src\ScS\BotEngine.cpp" />
+    <ClCompile Include="..\src\ScS\BotEngine.cpp">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\src\sprites.c">
       <ObjectFileName>$(IntDir)src\</ObjectFileName>
     </ClCompile>

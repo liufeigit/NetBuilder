@@ -104,17 +104,52 @@ typedef struct tile32 {
 	uint16 y;
 } tile32;
 
-#define false 0
-#define true 1
+
 
 #endif /* TYPES_H */
 
 
 #include "../unit.h"
 
+#include <vector>
+
 #include "BotEngine.hpp"
 
-void Spawn_Bot( Unit *pUnit ) {
+cBotEngine *g_BotEngine = 0;
+
+
+extern "C" void Bot_Init() {
+
+	g_BotEngine = new cBotEngine();
+}
+
+extern "C" void Bot_Spawn_Unit( Unit *pUnit ) {
+
+	g_BotEngine->Bot_Spawn_Unit( pUnit );
+}
+
+extern "C" void Bot_Unit_Destroyed( Unit *pAttacker, Unit *pDestroyed ) {
+	
+	g_BotEngine->Bot_Unit_Destroyed( pAttacker, pDestroyed );
+}
+
+
+cBotEngine::cBotEngine() {
 
 }
 
+cBotEngine::~cBotEngine() {
+
+}
+
+void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
+
+}
+
+void cBotEngine::Bot_Unit_Destroyed( Unit *pAttacker, Unit *pDestroyed ) {
+
+	// Unit destroyed without attacker
+	if( pAttacker == 0 ) {
+
+	}
+}

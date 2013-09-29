@@ -59,6 +59,7 @@
 #include "unit.h"
 #include "video/video.h"
 
+#include "ScS/BotInterface.h"
 
 const char *window_caption = "OpenDUNE - Pre v0.8";
 
@@ -889,6 +890,7 @@ static void GameLoop_Main(void)
 
 	uint16 key;
 
+	Bot_Init();
 	String_Init();
 	Sprites_Init();
 
