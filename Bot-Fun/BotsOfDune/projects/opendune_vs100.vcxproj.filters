@@ -516,6 +516,9 @@
     <ClInclude Include="..\src\ScS\BotInterface.h">
       <Filter>src\ScS</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\ScS\Network.hpp">
+      <Filter>src\ScS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\source.list" />

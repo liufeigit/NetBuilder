@@ -1,3 +1,13 @@
+/**
+*    Dune 2 Bot
+*                      
+* Copyright (c) 2013 
+*
+*              Strobs Canardly Systems
+*
+*                                  ScS
+**/
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,9 +121,12 @@ typedef struct tile32 {
 
 #include "../unit.h"
 
+#include <iostream>
 #include <vector>
 
+#include "Network.hpp"
 #include "BotEngine.hpp"
+
 
 cBotEngine *g_BotEngine = 0;
 
@@ -128,11 +141,78 @@ extern "C" void Bot_Spawn_Unit( Unit *pUnit ) {
 	g_BotEngine->Bot_Spawn_Unit( pUnit );
 }
 
-extern "C" void Bot_Unit_Destroyed( Unit *pAttacker, Unit *pDestroyed ) {
+extern "C" void Bot_Unit_Destroyed( Unit *pUnit, Unit *pAttacker ) {
 	
-	g_BotEngine->Bot_Unit_Destroyed( pAttacker, pDestroyed );
+	g_BotEngine->Bot_Unit_Destroyed( pUnit, pAttacker );
 }
 
+extern void Bot_Unit_Damage( Unit *pUnit, Unit *pAttacker ) {
+
+	g_BotEngine->Bot_Unit_Damage( pUnit, pAttacker );
+}
+
+extern "C" void Bot_Unit_Damage_Natural( Unit *pUnit ) {
+
+	g_BotEngine->Bot_Unit_Damage_Natural( pUnit );
+}
+
+extern "C" void Bot_Unit_Remove( Unit *pUnit ) {
+
+	g_BotEngine->Bot_Unit_Remove( pUnit );
+}
+
+cBot::cBot( std::string pName ) {
+
+	mName = pName;
+	mNetwork = new cNetwork();
+
+	mSelfDeath = 0;
+	mKills = 0;
+	mDeaths = 0;
+
+	Load();
+}
+
+cBot::~cBot() {
+
+	Save();
+	delete mNetwork;
+}
+
+void cBot::Load() {
+
+}
+
+void cBot::Save() {
+
+}
+
+void cBot::Tick() {
+
+}
+
+void cBot::DestroyedBy( Unit *pAttacker ) {
+
+	if( pAttacker == 0 )
+		++mSelfDeath;
+
+	mUnit = 0;
+}
+
+void cBot::Killed( Unit *pTarget ) {
+
+	
+}
+
+void cBot::TookDamage( Unit *pAttacker ) {
+
+
+}
+
+void cBot::Spawn( Unit *pUnit ) {
+
+	mUnit = pUnit;
+}
 
 cBotEngine::cBotEngine() {
 
@@ -142,14 +222,66 @@ cBotEngine::~cBotEngine() {
 
 }
 
-void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
+void cBotEngine::Bot_Unit_Remove( Unit *pUnit ) {
+	
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
 
+		if( (*BotIT)->mUnit == pUnit ) {
+			
+			std::cout << "Removed Unit!\nwe have a destroy we missed\n";
+			delete (*BotIT);
+			mBots.erase( BotIT );
+			return;
+		}
+	}
 }
 
-void cBotEngine::Bot_Unit_Destroyed( Unit *pAttacker, Unit *pDestroyed ) {
+void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
+
+	// Only control certain types of units
+	if( pUnit->o.type < UNIT_INFANTRY && pUnit->o.type > UNIT_QUAD )
+		return;
+
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
+
+		if( (*BotIT)->mUnit != 0 )
+			continue;
+
+		(*BotIT)->Spawn( pUnit );
+	}
+}
+
+void cBotEngine::Bot_Unit_Destroyed( Unit *pDestroyed, Unit *pAttacker ) {
 
 	// Unit destroyed without attacker
-	if( pAttacker == 0 ) {
 
+
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
+
+		// Was this the destroyed unit?
+		if( (*BotIT)->mUnit == pDestroyed ) {
+
+			for( std::vector< cBot* >::iterator BotOIT = mBots.begin(); BotOIT != mBots.end(); ++BotOIT ) {
+
+				// Was this the attacking bot? or was there no attacker
+				if( (*BotOIT)->mUnit == pAttacker || pAttacker == 0 ) {
+					
+					(*BotIT)->DestroyedBy( pAttacker );
+
+					if( pAttacker != 0 )
+						(*BotOIT)->Killed( pDestroyed );
+				}
+			}
+
+			break;
+		}
+	}
+}
+
+void cBotEngine::Tick() {
+
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
+
+		(*BotIT)->Tick();
 	}
 }

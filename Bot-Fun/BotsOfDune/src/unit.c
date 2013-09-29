@@ -900,7 +900,10 @@ bool Unit_SetPosition(Unit *u, tile32 position)
  */
 void Unit_Remove(Unit *u)
 {
+	Unit *Origin = 0;
 	if (u == NULL) return;
+
+	Bot_Unit_Remove( u );
 
 	u->o.flags.s.allocated = true;
 	Unit_UntargetMe(u);
@@ -1309,13 +1312,13 @@ bool Unit_Move(Unit *unit, uint16 distance)
 	if (!Tile_IsValid(newPosition)) {
 		if (!ui->flags.mustStayInMap) {
 			Unit_Remove(unit);
-			Bot_Unit_Destroyed( 0, unit );
+			Bot_Unit_Destroyed( unit, 0 );
 			return true;
 		}
 
 		if (unit->o.flags.s.byScenario && unit->o.linkedID == 0xFF && unit->o.script.variables[4] == 0) {
 			Unit_Remove(unit);
-			Bot_Unit_Destroyed( 0, unit );
+			Bot_Unit_Destroyed( unit, 0 );
 			return true;
 		}
 
@@ -1364,7 +1367,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 	distance = Tile_GetDistance(newPosition, currentDestination);
 
 	if (unit->o.type == UNIT_SONIC_BLAST) {
-		Unit *u;
+		Unit *u, *Origin;
 		uint16 damage;
 
 		damage = (unit->o.hitpoints / 4) + 1;
@@ -1375,6 +1378,9 @@ bool Unit_Move(Unit *unit, uint16 distance)
 		if (u != NULL) {
 			if (!g_table_unitInfo[u->o.type].flags.sonicProtection) {
 				Unit_Damage(u, damage, 0);
+
+				Origin = Unit_Get_ByIndex( Tools_Index_Decode( u->originEncoded ) );
+				Bot_Unit_Damage( u, Origin );
 			}
 		} else {
 			Structure *s;
@@ -1463,6 +1469,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 
 				if (unit->o.flags.s.degrades && (Tools_Random_256() & 3) == 0) {
 					Unit_Damage(unit, 1, 0);
+					Bot_Unit_Damage_Natural( unit );
 				}
 
 				if (unit->o.type == UNIT_SABOTEUR) {
@@ -1558,7 +1565,7 @@ bool Unit_Damage(Unit *unit, uint16 damage, uint16 range)
 	} else {
 		unit->o.hitpoints = 0;
 	}
-
+	
 	Unit_Deviation_Decrease(unit, 0);
 
 	houseID = Unit_GetHouseID(unit);

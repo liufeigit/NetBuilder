@@ -30,7 +30,7 @@
 #include "tile.h"
 #include "unit.h"
 #include "file.h"
-
+#include "ScS/BotInterface.h"
 
 uint16 g_mapSpriteID[64 * 64];
 Tile g_map[64 * 64];                                        /*!< All map data. */
@@ -419,6 +419,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 			Unit *u;
 			Unit *us;
 			Unit *attack;
+			Unit *Origin = Unit_Get_ByIndex( Tools_Index_Decode( unitOriginEncoded ) );
 
 			u = Unit_Find(&find);
 			if (u == NULL) break;
@@ -430,6 +431,8 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 
 			if (!(u->o.type == UNIT_SANDWORM && type == EXPLOSION_SANDWORM_SWALLOW) && u->o.type != UNIT_FRIGATE) {
 				Unit_Damage(u, hitpoints >> (distance >> 2), 0);
+				
+				Bot_Unit_Damage( u, Origin );
 			}
 
 			if (u->o.houseID == g_playerHouseID) continue;

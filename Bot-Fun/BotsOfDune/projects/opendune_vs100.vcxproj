@@ -146,6 +146,7 @@
     </ClCompile>
     <ClInclude Include="..\src\ScS\BotEngine.hpp" />
     <ClInclude Include="..\src\ScS\BotInterface.h" />
+    <ClInclude Include="..\src\ScS\Network.hpp" />
     <ClInclude Include="..\src\sprites.h" />
     <ClCompile Include="..\src\string.c">
       <ObjectFileName>$(IntDir)src\</ObjectFileName>
