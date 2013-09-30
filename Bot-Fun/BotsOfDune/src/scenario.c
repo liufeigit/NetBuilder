@@ -25,6 +25,8 @@
 #include "unit.h"
 #include "gui/gui.h"
 
+#include "ScS\BotInterface.h"
+
 Scenario g_scenario;
 
 static void *s_scenarioBuffer = NULL;
@@ -199,6 +201,8 @@ static void Scenario_Load_Unit(const char *key, char *settings)
 	Unit_SetOrientation(u, u->orientation[0].current, true, 0);
 	Unit_SetOrientation(u, u->orientation[0].current, true, 1);
 	Unit_SetSpeed(u, 0);
+
+	Bot_Spawn_Unit( u );
 }
 
 static void Scenario_Load_Structure(const char *key, char *settings)

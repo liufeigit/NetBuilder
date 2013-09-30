@@ -210,7 +210,8 @@ cBot::cBot( std::string pName ) {
 	mKills = 0;
 	mDeaths = 0;
 	mBusy = false;
- 
+	mUnit = 0;
+
 	mInputs = 5;
 
 	for( size_t Input = 0; Input < mInputs; ++Input ) {

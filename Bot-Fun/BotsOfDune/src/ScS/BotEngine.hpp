@@ -1,3 +1,13 @@
+/**
+*    Dune 2 Bot
+*                      
+* Copyright (c) 2013 
+*
+*              Strobs Canardly Systems
+*
+*                                  ScS
+**/
+
 struct sTrainingData {
 	double mInput[7];
 	size_t mInputs;
