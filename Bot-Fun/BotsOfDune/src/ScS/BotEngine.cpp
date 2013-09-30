@@ -340,7 +340,7 @@ void cBot::Tick() {
 	if(!mUnit)
 		return;
 
-	if(  mUnit->speed > 0 )
+	if(  mUnit->actionID == ACTION_MOVE || mUnit->actionID == ACTION_ATTACK )
 		return;
 
 	// Inputs
@@ -513,7 +513,7 @@ void cBotEngine::Bot_Unit_Remove( Unit *pUnit ) {
 void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
 
 	// Only control certain types of units
-	if( pUnit->o.type < UNIT_INFANTRY && pUnit->o.type > UNIT_QUAD )
+	if( pUnit->o.type < UNIT_INFANTRY || pUnit->o.type > UNIT_QUAD )
 		return;
 
 	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
@@ -522,6 +522,7 @@ void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
 			continue;
 
 		(*BotIT)->Spawn( pUnit );
+		break;
 	}
 }
 
