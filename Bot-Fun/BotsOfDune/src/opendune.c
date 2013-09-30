@@ -975,6 +975,7 @@ static void GameLoop_Main(void)
 	
 
 	for (;; sleepIdle()) {
+
 		if (g_gameMode == GM_MENU) {
 			GameLoop_GameIntroAnimationMenu();
 
@@ -1088,6 +1089,8 @@ static void GameLoop_Main(void)
 			GUI_DrawCredits(g_playerHouseID, 0);
 
 			//GameLoop_Team();
+					
+			Bot_Tick();
 			GameLoop_Unit();
 			//GameLoop_Structure();
 			//GameLoop_House();

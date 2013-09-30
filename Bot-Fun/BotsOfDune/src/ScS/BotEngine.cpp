@@ -166,6 +166,11 @@ extern "C" void Bot_Init() {
 	g_BotEngine = new cBotEngine();
 }
 
+extern "C" void Bot_Tick() {
+
+	g_BotEngine->Tick();
+}
+
 extern "C" void Bot_Spawn_Unit( Unit *pUnit ) {
 
 	g_BotEngine->Bot_Spawn_Unit( pUnit );
@@ -312,8 +317,7 @@ void cBot::Train( unsigned int pSeed ) {
 
 		// Should this be?
 			if( Error < 0.005 )
-
-			break;
+				break;
 		}
 	}
 

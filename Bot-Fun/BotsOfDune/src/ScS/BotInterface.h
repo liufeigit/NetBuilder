@@ -9,6 +9,7 @@
 **/
 
 extern void Bot_Init();
+extern void Bot_Tick();
 
 extern void Bot_Spawn_Unit( Unit *pUnit );
 extern void Bot_Unit_Destroyed( Unit *pUnit, Unit *pAttacker );
