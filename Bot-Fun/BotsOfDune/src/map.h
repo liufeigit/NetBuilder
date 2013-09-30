@@ -87,7 +87,9 @@ extern const tile32 g_table_tilediff[34][8];
 extern uint16 g_dirtyViewportCount;
 extern uint16 g_var_3A08;
 
+#ifndef _Bot_Skips
 extern const LandscapeInfo g_table_landscapeInfo[LST_MAX];
+#endif
 
 extern uint16 Map_MoveDirection(uint16 direction);
 extern void Map_SetSelection(uint16 packed);
@@ -98,7 +100,9 @@ extern bool Map_IsValidPosition(uint16 position);
 extern bool Map_IsPositionUnveiled(uint16 position);
 extern bool Map_IsPositionInViewport(tile32 position, uint16 *retX, uint16 *retY);
 extern void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 unitOriginEncoded);
+#ifndef _Bot_Skips
 extern uint16 Map_GetLandscapeType(uint16 packed);
+#endif
 extern void Map_Update(uint16 packed, uint16 type, bool ignoreInvisible);
 extern void Map_DeviateArea(uint16 type, tile32 position, uint16 radius, uint8 houseID);
 extern void Map_Bloom_ExplodeSpice(uint16 packed, uint8 houseID);

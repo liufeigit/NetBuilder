@@ -116,10 +116,24 @@ typedef struct tile32 {
 
 
 #endif /* TYPES_H */
+
+#define _Bot_Skips 1
+
 #include "../tools.h"
 #include "../tile.h"
 #include "../unit.h"
 #include "../map.h"
+
+extern "C" UnitInfo g_table_unitInfo[UNIT_MAX];
+extern "C" const LandscapeInfo g_table_landscapeInfo[LST_MAX];
+extern "C" bool Unit_Move(Unit *unit, uint16 distance);
+extern "C" tile32 Tile_MoveByOrientation(tile32 position, uint8 orientation);
+extern "C" uint16 Tile_PackTile(tile32 tile);
+extern "C" uint16 Map_GetLandscapeType(uint16 packed);
+extern "C" int16 Unit_GetTileEnterScore(Unit *unit, uint16 packed, uint16 orient8);
+extern "C" uint16 Unit_FindBestTargetEncoded(Unit *unit, uint16 mode);
+extern "C" void Unit_SetTarget(Unit* unit, uint16 encoded);
+extern "C" void Unit_Rotate(Unit *unit, uint16 level);
 
 #include <iostream>
 #include <vector>
@@ -142,12 +156,7 @@ void Zero( double *pVals, size_t pCount ) {
 #include "Network.hpp"
 #include "BotEngine.hpp"
 
-extern "C" bool Unit_Move(Unit *unit, uint16 distance);
-extern "C" static void Unit_Rotate(Unit *unit, uint16 level);
-extern "C" tile32 Tile_MoveByOrientation(tile32 position, uint8 orientation);
-extern "C" uint16 Tile_PackTile(tile32 tile);
-extern "C" uint16 Map_GetLandscapeType(uint16 packed);
-extern "C" int16 Unit_GetTileEnterScore(Unit *unit, uint16 packed, uint16 orient8);
+
 
 cBotEngine *g_BotEngine = 0;
 
@@ -391,12 +400,6 @@ void cBot::Tick() {
 	}
 }
 
-
-void cBot::Move() {
-
-	
-}
-
 void cBot::DestroyedBy( Unit *pAttacker ) {
 
 	if( pAttacker == 0 )
@@ -442,6 +445,17 @@ cBotEngine::cBotEngine() {
 		mMap[y] = 0;
 	}
 
+	mBots.push_back( new cBot( "0" ) );
+	mBots.push_back( new cBot( "1" ) );
+	mBots.push_back( new cBot( "2" ) );
+	mBots.push_back( new cBot( "3" ) );
+	mBots.push_back( new cBot( "4" ) );
+	mBots.push_back( new cBot( "5" ) );
+	mBots.push_back( new cBot( "6" ) );
+	mBots.push_back( new cBot( "7" ) );
+	mBots.push_back( new cBot( "8" ) );
+	mBots.push_back( new cBot( "9" ) );
+	mBots.push_back( new cBot( "10" ) );
 }
 
 cBotEngine::~cBotEngine() {
@@ -478,9 +492,6 @@ void cBotEngine::Bot_Spawn_Unit( Unit *pUnit ) {
 }
 
 void cBotEngine::Bot_Unit_Destroyed( Unit *pDestroyed, Unit *pAttacker ) {
-
-	// Unit destroyed without attacker
-
 
 	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
 

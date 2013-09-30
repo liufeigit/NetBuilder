@@ -227,7 +227,9 @@ extern const char * const g_table_movementTypeName[MOVEMENT_MAX];
 
 extern const uint16 g_table_actionsAI[4];
 extern const ActionInfo g_table_actionInfo[ACTION_MAX];
+#ifndef _Bot_Skips
 extern UnitInfo g_table_unitInfo[UNIT_MAX];
+#endif
 
 extern Unit *g_unitActive;
 extern Unit *g_unitHouseMissile;
@@ -257,11 +259,15 @@ extern uint16 Unit_FindClosestRefinery(Unit *unit);
 extern bool Unit_SetPosition(Unit *u, tile32 position);
 extern void Unit_Remove(Unit *u);
 extern bool Unit_StartMovement(Unit *unit);
+#ifndef _Bot_Skips
 extern void Unit_SetTarget(Unit* unit, uint16 encoded);
+#endif
 extern bool Unit_Deviation_Decrease(Unit* unit, uint16 amount);
 extern void Unit_RemoveFog(Unit *unit);
 extern bool Unit_Deviate(Unit *unit, uint16 probability, uint8 houseID);
+#ifndef _Bot_Skips
 extern bool Unit_Move(Unit *unit, uint16 distance);
+#endif
 extern bool Unit_Damage(Unit *unit, uint16 damage, uint16 range);
 extern void Unit_UntargetMe(Unit *unit);
 extern void Unit_SetOrientation(Unit *unit, int8 orientation, bool rotateInstantly, uint16 level);
@@ -275,7 +281,9 @@ extern void Unit_DisplayStatusText(Unit *unit);
 extern void Unit_Hide(Unit *unit);
 extern Unit *Unit_CallUnitByType(UnitType type, uint8 houseID, uint16 target, bool createCarryall);
 extern void Unit_EnterStructure(Unit *unit, struct Structure *s);
+#ifndef _Bot_Skips
 extern int16 Unit_GetTileEnterScore(Unit *unit, uint16 packed, uint16 orient8);
+#endif
 extern void Unit_RemovePlayer(Unit *unit);
 extern void Unit_UpdateMap(uint16 type, Unit *unit);
 extern void Unit_RemoveFromTile(Unit *unit, uint16 packed);
@@ -286,7 +294,9 @@ extern void Unit_HouseUnitCount_Add(Unit *unit, uint8 houseID);
 
 extern uint16 Unit_GetTargetUnitPriority(Unit *unit, Unit *target);
 extern uint16 Unit_GetTargetStructurePriority(Unit *unit, struct Structure *s);
+#ifndef _Bot_Skips
 extern uint16 Unit_FindBestTargetEncoded(Unit *unit, uint16 mode);
+#endif
 extern Unit *Unit_FindBestTargetUnit(Unit *u, uint16 mode);
 extern Unit *Unit_Sandworm_FindBestTarget(Unit *unit);
 

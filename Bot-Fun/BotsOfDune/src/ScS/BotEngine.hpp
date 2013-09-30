@@ -54,8 +54,6 @@ private:	// Functions
 
 protected:
 
-	void			 Move();
-
 public:
 	size_t			 mSelfDeath;
 	size_t			 mDeaths;

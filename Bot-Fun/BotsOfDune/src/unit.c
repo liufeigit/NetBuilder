@@ -63,7 +63,7 @@ int16 g_starportAvailable[UNIT_MAX];
  * @param unit The Unit to operate on.
  * @param level 0 = base, 1 = top (turret etc).
  */
-static void Unit_Rotate(Unit *unit, uint16 level)
+void Unit_Rotate(Unit *unit, uint16 level)
 {
 	int8 target;
 	int8 current;
