@@ -68,8 +68,8 @@ bool g_dune2_enhanced = true; /*!< If false, the game acts exactly like the orig
 uint32 g_hintsShown1 = 0;          /*!< A bit-array to indicate which hints has been show already (0-31). */
 uint32 g_hintsShown2 = 0;          /*!< A bit-array to indicate which hints has been show already (32-63). */
 GameMode g_gameMode = GM_MENU;
-uint16 g_campaignID = 1;
-uint16 g_scenarioID = 10;
+uint16 g_campaignID = 8;
+uint16 g_scenarioID = 22;
 uint16 g_activeAction = 0xFFFF;      /*!< Action the controlled unit will do. */
 uint32 g_tickScenarioStart = 0;      /*!< The tick the scenario started in. */
 static uint32 s_tickGameTimeout = 0; /*!< The tick the game will timeout. */
@@ -269,17 +269,17 @@ static void GameLoop_LevelEnd(void)
 		if (GameLoop_IsLevelWon()) {
 			Sound_Output_Feedback(40);
 
-			GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
+			//GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
 
-			GUI_Mentat_ShowWin();
+			//GUI_Mentat_ShowWin();
 
-			Sprites_UnloadTiles();
+			//Sprites_UnloadTiles();
 
-			g_campaignID++;
+			//g_campaignID++;
 
-			GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
+			//GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
 
-			if (g_campaignID == 9) {
+			/*if (g_campaignID == 9) {
 				GUI_Mouse_Hide_Safe();
 
 				GUI_SetPaletteAnimated(g_palette2, 15);
@@ -287,7 +287,7 @@ static void GameLoop_LevelEnd(void)
 				GameLoop_GameEndAnimation();
 				PrepareEnd();
 				exit(0);
-			}
+			}*/
 
 			GUI_Mouse_Hide_Safe();
 			GameLoop_LevelEndAnimation();
@@ -903,7 +903,7 @@ static void GameLoop_Main(void)
 	Timer_SetTimer(TIMER_GAME, true);
 	Timer_SetTimer(TIMER_GUI, true);
 
-	g_campaignID = 1;
+	g_campaignID = 8;
 	g_scenarioID = 22;
 	g_playerHouseID = HOUSE_ATREIDES;
 	g_debugScenario = false;

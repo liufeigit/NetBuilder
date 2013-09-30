@@ -222,40 +222,54 @@ void cBot::Save() {
 
 }
 
-struct sTrainingData {
-	double mInput[7];
-	size_t mInputs;
-
-	double mOutput[4];
-	size_t mOutputs;
-	sTrainingData() {
-		mInputs = 7;
-		mOutputs = 4;
-
-		Zero( &mInput[0], mInputs );
-		Zero( &mOutput[0], mOutputs );
-	}
-
-	void Set( double pUnitType, double pCurrentSpeed, double pScoreToEnter, double pDamagedPercent, double pDamageAverageTicks, double pHostileInRange, double  pFriendlyInRange,
-				   double pOutMoveForward, double pOutRotateBottom, double pOutRotateTop, double pAttack ) {
-
-		mInput[0] = pUnitType;
-		mInput[1] = pCurrentSpeed;		
+/*
+		mInput[0] = pUnitType;				// Type of unit
+		mInput[1] = pCurrentSpeed;			// Speed on the current tile
 		mInput[2] = pScoreToEnter;			// 256 if tile is not accessable, -1 when it is an accessable structure, or a score to enter the tile otherwise.
 		mInput[3] = pDamagedPercent;		// Percentage of damage 
 		mInput[4] = pDamageAverageTicks;	// average damage over the last 5 engine ticks
-		mInput[5] = pHostileInRange;		// hostiles in attack range
-		mInput[6] = pFriendlyInRange;		// friendlys in attack range
+		mInput[5] = pHostileInRange;		// hostile in attack range
+		mInput[6] = pFriendlyInRange;		// friendly in attack range
 		mInputs = 7;
 
-		mOutput[0] = pOutMoveForward;
-		mOutput[1] = pOutRotateBottom;
-		mOutput[2] = pOutRotateTop;
-		mOutput[3] = pAttack;
-		mOutputs=4;
+		mOutput[0] = pOutMoveForward;		// Mov forward
+		mOutput[1] = pOutRotateBottom;		// Rotate bottom of unit
+		mOutput[2] = pOutRotateTop;			// Rotate top of unit
+		mOutput[3] = pAttack;				// Attack best in range target
+		*/
+
+void cBot::DoTrain( std::vector<sTrainingData*> *pData, const double pType ) {
+
+	// Remember, we train towards these outputs.. but there are no guarantees in life :)
+	
+
+	// Forward tile not accessable, Turn Base
+	pData->push_back( new sTrainingData(
+				pType, 0, 256, 0, 0, 0, 0,		// Inputs
+				0, 1, 0, 0						// Outputs
+				));
+
+	for( int x = 0; x < 10; ++x ) {
+		
+		// Move Forward for scores < 10
+		pData->push_back( new sTrainingData(
+				pType, 0, x, 0, 0, 0, 0,		// Inputs
+				1, 0, 0, 0						// Outputs
+				));
 	}
 
-};
+	// Rotate bottom and move forward if hostile in range
+	pData->push_back( new sTrainingData(
+		pType, 0, 0, 0, 0, 1, 0,		// Inputs
+		1, 1, 0, 0						// Outputs
+		));
+
+	// Attack if hostile in range
+	pData->push_back( new sTrainingData(
+		pType, 0, 0, 0, 0, 1, 0,		// Inputs
+		0, 0, 0, 1						// Outputs
+		));
+}
 
 void cBot::Train( unsigned int pSeed ) {
 	if( !mSeed )
@@ -263,11 +277,27 @@ void cBot::Train( unsigned int pSeed ) {
 
 	srand ( pSeed );
 
-	sTrainingData Training[5];
+	std::vector<sTrainingData*> Training[13];
 
-	Training[0].Set( UNIT_INFANTRY, 
+	size_t x = 0;
+	for( double UnitType = UNIT_INFANTRY; UnitType <= UNIT_QUAD; ++UnitType ) {
+		
+		DoTrain( &Training[x], UnitType );
+	}
 
-	double Error = mNetwork->Backward( Training->mInput, Training->mInputs, Training->mOutput, Training->mOutputs );
+
+	for( size_t UnitType = UNIT_INFANTRY; UnitType <= UNIT_QUAD; ++UnitType ) {
+
+		for( std::vector<sTrainingData*>::iterator TrainIT = Training[ UnitType ].begin(); TrainIT != Training[ UnitType ].end(); ++TrainIT ) {
+			
+			double Error = mNetwork->Backward( (*TrainIT)->mInput, (*TrainIT)->mInputs, (*TrainIT)->mOutput, (*TrainIT)->mOutputs );
+
+		// Should this be?
+			if( Error < 0.005 )
+
+			break;
+		}
+	}
 
 }
 
@@ -317,6 +347,12 @@ void cBot::Tick() {
 		mInput[4]  += (*DmgIT);
 	}
 	mInput[4] /= mDamage.size(); 
+
+	// Hostile  in range
+	mInput[5] = (Unit_FindBestTargetEncoded( mUnit, 1 ) == 0 ? 0 : 1);
+
+	// Friendly in range
+	mInput[6] = 0;
 
 	cConnection *Output = mNetwork->Forward( mInput, mInputs );
 

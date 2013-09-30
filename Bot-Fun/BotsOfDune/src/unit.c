@@ -755,7 +755,7 @@ uint16 Unit_GetTargetUnitPriority(Unit *unit, Unit *target)
 	if (unit == target) return 0;
 
 	if (!target->o.flags.s.allocated) return 0;
-	if ((target->o.seenByHouses & (1 << Unit_GetHouseID(unit))) == 0) return 0;
+	//if ((target->o.seenByHouses & (1 << Unit_GetHouseID(unit))) == 0) return 0;
 
 	if (House_AreAllied(Unit_GetHouseID(unit), Unit_GetHouseID(target))) return 0;
 
@@ -1863,7 +1863,7 @@ uint16 Unit_FindTargetAround(uint16 packed)
 
 	if (g_selectionType == SELECTIONTYPE_PLACE) return packed;
 
-	if (Structure_Get_ByPackedTile(packed) != NULL) return packed;
+	//if (Structure_Get_ByPackedTile(packed) != NULL) return packed;
 
 	if (Map_GetLandscapeType(packed) == LST_BLOOM_FIELD) return packed;
 
