@@ -294,18 +294,19 @@ void cBot::Train( unsigned int pSeed ) {
 
 	srand ( pSeed );
 
-	std::vector<sTrainingData*> Training[13];
+	std::vector<sTrainingData*> Training[15];
 
 	size_t x = 0;
-	for( double UnitType = UNIT_INFANTRY; UnitType <= UNIT_QUAD; ++UnitType ) {
+	for( size_t UnitType = UNIT_INFANTRY; UnitType <= UNIT_QUAD; ++UnitType ) {
 		
-		DoTrain( &Training[x], UnitType );
+		DoTrain( &Training[x++], (double) UnitType );
+
 	}
 
 
-	for( size_t UnitType = UNIT_INFANTRY; UnitType <= UNIT_QUAD; ++UnitType ) {
+	for( size_t x = 0; x < 15; ++x ) {
 
-		for( std::vector<sTrainingData*>::iterator TrainIT = Training[ UnitType ].begin(); TrainIT != Training[ UnitType ].end(); ++TrainIT ) {
+		for( std::vector<sTrainingData*>::iterator TrainIT = Training[ x ].begin(); TrainIT != Training[ x ].end(); ++TrainIT ) {
 			
 			double Error = mNetwork->Backward( (*TrainIT)->mInput, (*TrainIT)->mInputs, (*TrainIT)->mOutput, (*TrainIT)->mOutputs );
 
