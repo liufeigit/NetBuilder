@@ -7,14 +7,16 @@ private:	// Members
 	vector<uint16>	 mDamage;
 	vector< Unit*>	 mDamagers;
 
-	double			 mInput[ 5 ];
+	double			 mInput[ 7 ];
 	double			 mInputs;
 
 	double			 mTotalHitpoints;
+	unsigned int	 mSeed;
 
 private:	// Functions
 	void			 Load();
 	void			 Save();
+	void			 Train( unsigned int pSeed );
 
 protected:
 

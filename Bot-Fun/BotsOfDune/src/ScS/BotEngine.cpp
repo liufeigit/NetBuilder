@@ -202,8 +202,10 @@ cBot::cBot( std::string pName ) {
 	for( size_t Input = 0; Input < mInputs; ++Input ) {
 		mInput[ Input ] = 0;
 	}
+	mSeed = 0;
 
 	Load();
+	Train( time(NULL) );
 }
 
 cBot::~cBot() {
@@ -220,6 +222,55 @@ void cBot::Save() {
 
 }
 
+struct sTrainingData {
+	double mInput[7];
+	size_t mInputs;
+
+	double mOutput[4];
+	size_t mOutputs;
+	sTrainingData() {
+		mInputs = 7;
+		mOutputs = 4;
+
+		Zero( &mInput[0], mInputs );
+		Zero( &mOutput[0], mOutputs );
+	}
+
+	void Set( double pUnitType, double pCurrentSpeed, double pScoreToEnter, double pDamagedPercent, double pDamageAverageTicks, double pHostileInRange, double  pFriendlyInRange,
+				   double pOutMoveForward, double pOutRotateBottom, double pOutRotateTop, double pAttack ) {
+
+		mInput[0] = pUnitType;
+		mInput[1] = pCurrentSpeed;		
+		mInput[2] = pScoreToEnter;			// 256 if tile is not accessable, -1 when it is an accessable structure, or a score to enter the tile otherwise.
+		mInput[3] = pDamagedPercent;		// Percentage of damage 
+		mInput[4] = pDamageAverageTicks;	// average damage over the last 5 engine ticks
+		mInput[5] = pHostileInRange;		// hostiles in attack range
+		mInput[6] = pFriendlyInRange;		// friendlys in attack range
+		mInputs = 7;
+
+		mOutput[0] = pOutMoveForward;
+		mOutput[1] = pOutRotateBottom;
+		mOutput[2] = pOutRotateTop;
+		mOutput[3] = pAttack;
+		mOutputs=4;
+	}
+
+};
+
+void cBot::Train( unsigned int pSeed ) {
+	if( !mSeed )
+		mSeed = pSeed;
+
+	srand ( pSeed );
+
+	sTrainingData Training[5];
+
+	Training[0].Set( UNIT_INFANTRY, 
+
+	double Error = mNetwork->Backward( Training->mInput, Training->mInputs, Training->mOutput, Training->mOutputs );
+
+}
+
 void cBot::Tick() {
 	const UnitInfo *ui;
 	int8 orientation;
@@ -232,17 +283,15 @@ void cBot::Tick() {
 	if(!mUnit)
 		return;
 
-	if(mBusy)
-		return;
-
 	// Inputs
 
 	// 0: Unit Type
-	// 1: Terrain Punishment (Speed loss because of unit type)
+	// 1: Current Speed on this tile
 	// 2: Score to enter forward tile
 	// 3: Damaged Percent
 	// 4: Average Damage over last 5 ticks
-	// 5: 
+	// 5: pHostileInRange
+	// 6: pFriendlyInRange
 
 	mInput[0] = mUnit->o.type;
 
