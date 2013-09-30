@@ -179,6 +179,8 @@ void GameLoop_Unit(void)
 
 		u = Unit_Find(&find);
 		if (u == NULL) break;
+		if( u->o.type == UNIT_SANDWORM )
+			continue;
 
 		ui = &g_table_unitInfo[u->o.type];
 

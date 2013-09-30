@@ -215,6 +215,7 @@ cBot::cBot( std::string pName ) {
 	mDeaths = 0;
 	mBusy = false;
 	mUnit = 0;
+	mTick = 0;
 
 	mInputs = 5;
 
@@ -337,6 +338,7 @@ void cBot::Tick() {
 	uint16 type;
 	uint16 speed;
 	int16 score;
+	++mTick;
 
 	if(!mUnit)
 		return;
@@ -361,6 +363,8 @@ void cBot::Tick() {
 	position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 	packed = Tile_PackTile(position);
 	score = Unit_GetTileEnterScore(mUnit, packed, orientation / 32);
+	if( score == 256 )
+		mLastDirChange = 0;
 
 	type = Map_GetLandscapeType(packed);
 	if (type == LST_STRUCTURE) 
@@ -398,7 +402,7 @@ void cBot::Tick() {
 	// 2: Rotate Top
 	// 3: Attack
 
-	if( Output->mActions[0]->mResult > Act ) {
+	if( Output->mActions[0]->mResult > Act && Output->mActions[1]->mResult < Act ) {
 		
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
@@ -410,7 +414,9 @@ void cBot::Tick() {
 	}
 
 
-	if( Output->mActions[1]->mResult > Act ) {
+	if( Output->mActions[1]->mResult > Act || mTick - mLastDirChange > 10 ) {
+		mLastDirChange = mTick;
+
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
 		orientation = (int8)((mUnit->orientation[0].current + 32) & 0xE0);

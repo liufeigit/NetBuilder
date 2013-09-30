@@ -55,6 +55,7 @@ private:	// Members
 
 	double			 mTotalHitpoints;
 	unsigned int	 mSeed;
+	unsigned int	 mLastDirChange;
 
 private:	// Functions
 	void			 Load();
@@ -70,6 +71,7 @@ public:
 	size_t			 mKills;
 	Unit			*mUnit;
 	bool			 mBusy;
+	size_t			 mTick;
 
 	cBot( std::string pName );
 	~cBot( );
