@@ -413,7 +413,7 @@ void cBot::Tick() {
 	if( Output->mActions[1]->mResult > Act ) {
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
-		orientation = (int8)((mUnit->orientation[0].current + 16) & 0xE0);
+		orientation = (int8)((mUnit->orientation[0].current + 32) & 0xE0);
 		position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 		packed = Tile_PackTile(position);
 		if (Object_GetByPackedTile(packed) == NULL)  

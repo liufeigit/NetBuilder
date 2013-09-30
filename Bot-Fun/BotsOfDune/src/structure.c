@@ -907,7 +907,7 @@ void Structure_ActivateSpecial(Structure *s)
 
 				if (u == NULL) continue;
 
-				Unit_SetAction(u, ACTION_HUNT);
+				//Unit_SetAction(u, ACTION_HUNT);
 			}
 
 			s->countDown = g_table_houseInfo[s->o.houseID].specialCountDown;
@@ -1976,7 +1976,7 @@ void Structure_HouseUnderAttack(uint8 houseID)
 		if (ui->bulletType == UNIT_INVALID) continue;
 
 		/* XXX -- Dune2 does something odd here. What was their intention? */
-		if ((u->actionID == ACTION_GUARD && u->actionID == ACTION_AMBUSH) || u->actionID == ACTION_AREA_GUARD) Unit_SetAction(u, ACTION_HUNT);
+		//if ((u->actionID == ACTION_GUARD && u->actionID == ACTION_AMBUSH) || u->actionID == ACTION_AREA_GUARD) Unit_SetAction(u, ACTION_HUNT);
 	}
 }
 

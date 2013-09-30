@@ -182,7 +182,7 @@ static void Scenario_Load_Unit(const char *key, char *settings)
 	u->o.hitpoints   = hitpoints * g_table_unitInfo[unitType].o.hitpoints / 256;
 	u->o.position    = position;
 	u->orientation[0].current = orientation;
-	u->actionID     = actionType;
+	u->actionID     = ACTION_GUARD;
 	u->nextActionID = ACTION_INVALID;
 
 	/* In case the above function failed and we are passed campaign 2, don't add the unit */
