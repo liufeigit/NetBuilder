@@ -269,6 +269,12 @@ void cBot::DoTrain( std::vector<sTrainingData*> *pData, const double pType ) {
 		pType, 0, 0, 0, 0, 1, 0,		// Inputs
 		0, 0, 0, 1						// Outputs
 		));
+
+	// Receiving Damage over last 5 ticks, Rotate Bottom, move forward 
+	pData->push_back( new sTrainingData(
+		pType, 0, 0, 0, 10, 1, 0,		// Inputs
+		1, 1, 0, 0						// Outputs
+		));
 }
 
 void cBot::Train( unsigned int pSeed ) {
