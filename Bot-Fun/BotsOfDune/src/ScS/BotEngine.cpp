@@ -263,12 +263,13 @@ void cBot::DoTrain( std::vector<sTrainingData*> *pData, const double pType ) {
 
 	// Remember, we train towards these outputs.. but there are no guarantees in life :)
 	
-
-	// Forward tile not accessable, Turn Base
-	pData->push_back( new sTrainingData(
-				pType, 0, 256, 0, 0, 0, 0,		// Inputs
-				0, 1, 0, 0						// Outputs
-				));
+	for( int x = 0; x < 10; ++x ) {
+		// Forward tile not accessable, Turn Base
+		pData->push_back( new sTrainingData(
+					pType, 0, 256, 0, 0, 0, 0,		// Inputs
+					0, 1, 0, 0						// Outputs
+					));
+	}
 
 	for( int x = 0; x < 10; ++x ) {
 		
