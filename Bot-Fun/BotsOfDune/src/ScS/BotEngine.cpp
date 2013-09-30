@@ -225,10 +225,12 @@ cBot::~cBot() {
 
 void cBot::Load() {
 
+	mNetwork->Load( mName );
 }
 
 void cBot::Save() {
 
+	mNetwork->Save( mName );
 }
 
 /*
@@ -440,11 +442,12 @@ void cBot::Spawn( Unit *pUnit ) {
 
 cBotEngine::cBotEngine() {
 
-	for(uint8 y = 0; y < 64 * 64; ++y ) {
+	for(uint16 y = 0; y < 64 * 64; ++y ) {
 		
 		mMap[y] = 0;
 	}
 
+	cout << "Creating Bots\n";
 	mBots.push_back( new cBot( "0" ) );
 	mBots.push_back( new cBot( "1" ) );
 	mBots.push_back( new cBot( "2" ) );

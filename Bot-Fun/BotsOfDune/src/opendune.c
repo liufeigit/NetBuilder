@@ -1183,7 +1183,7 @@ int main(int argc, char **argv)
 
 	if (err != NULL) _dup2(_fileno(err), _fileno(stderr));
 	if (out != NULL) _dup2(_fileno(out), _fileno(stdout));
-	FreeConsole();
+	//FreeConsole();
 #endif
 	CrashLog_Init();
 
