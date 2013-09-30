@@ -105,8 +105,8 @@ static bool GameLoop_IsLevelFinished(void)
 
 	if (s_debugForceWin) return true;
 
-	/* You have to play at least 7200 ticks before you can win the game */
-	if (g_timerGame - g_tickScenarioStart < 7200) return false;
+	/* You have to play at least 100000 ticks before you can win the game */
+	if (g_timerGame - g_tickScenarioStart < 100000) return false;
 
 	/* Check for structure counts hitting zero */
 	if ((g_scenario.winFlags & 0x3) != 0) {

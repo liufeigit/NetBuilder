@@ -115,18 +115,39 @@ typedef struct tile32 {
 } tile32;
 
 
-
 #endif /* TYPES_H */
-
-
+#include "../tools.h"
+#include "../tile.h"
 #include "../unit.h"
+#include "../map.h"
 
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <iomanip>
+
+double RandomNumber(double pMin, double pMax) {
+
+	return pMin + ((double)rand() / RAND_MAX) * (pMax - pMin);
+}
+
+void Zero( double *pVals, size_t pCount ) {
+
+	for( size_t count = 0; count < pCount; ++count ) {
+
+		pVals[count] = 0;
+	}
+}
 
 #include "Network.hpp"
 #include "BotEngine.hpp"
 
+extern "C" bool Unit_Move(Unit *unit, uint16 distance);
+extern "C" static void Unit_Rotate(Unit *unit, uint16 level);
+extern "C" tile32 Tile_MoveByOrientation(tile32 position, uint8 orientation);
+extern "C" uint16 Tile_PackTile(tile32 tile);
+extern "C" uint16 Map_GetLandscapeType(uint16 packed);
+extern "C" int16 Unit_GetTileEnterScore(Unit *unit, uint16 packed, uint16 orient8);
 
 cBotEngine *g_BotEngine = 0;
 
@@ -175,8 +196,9 @@ cBot::cBot( std::string pName ) {
 	mKills = 0;
 	mDeaths = 0;
 	mBusy = false;
+ 
+	mInputs = 5;
 
-	mInputs = 10;
 	for( size_t Input = 0; Input < mInputs; ++Input ) {
 		mInput[ Input ] = 0;
 	}
@@ -199,10 +221,89 @@ void cBot::Save() {
 }
 
 void cBot::Tick() {
+	const UnitInfo *ui;
+	int8 orientation;
+	tile32 position;
+	uint16 packed;
+	uint16 type;
+	uint16 speed;
+	int16 score;
+
+	if(!mUnit)
+		return;
 
 	if(mBusy)
 		return;
 
+	// Inputs
+
+	// 0: Unit Type
+	// 1: Terrain Punishment (Speed loss because of unit type)
+	// 2: Score to enter forward tile
+	// 3: Damaged Percent
+	// 4: Average Damage over last 5 ticks
+	// 5: 
+
+	mInput[0] = mUnit->o.type;
+
+	ui = &g_table_unitInfo[mUnit->o.type];
+	orientation = (int8)((mUnit->orientation[0].current + 16) & 0xE0);
+	position = Tile_MoveByOrientation(mUnit->o.position, orientation);
+	packed = Tile_PackTile(position);
+	score = Unit_GetTileEnterScore(mUnit, packed, orientation / 32);
+
+	type = Map_GetLandscapeType(packed);
+	if (type == LST_STRUCTURE) 
+		type = LST_CONCRETE_SLAB;
+	speed = g_table_landscapeInfo[type].movementSpeed[ui->movementType];
+
+	mInput[1] = (double) speed;
+
+	mInput[2] = (double) score;
+
+	mInput[3] = mUnit->o.hitpoints / mTotalHitpoints;
+
+	mInput[4]  = 0;
+	for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
+		mInput[4]  += (*DmgIT);
+	}
+	mInput[4] /= mDamage.size(); 
+
+	cConnection *Output = mNetwork->Forward( mInput, mInputs );
+
+	double Act = 0.51;
+	
+	// Outputs
+
+	// 0: Move Forward
+	// 1: Rotate Bottom
+	// 2: Rotate Top
+	// 3: Attack
+
+	if( Output->mActions[0]->mResult > Act ) 
+		Unit_Move( mUnit, 1 );
+
+
+	if( Output->mActions[1]->mResult > Act ) 
+		Unit_Rotate( mUnit, 0 );
+
+
+	if( Output->mActions[2]->mResult > Act ) 
+		Unit_Rotate( mUnit, 1 );
+
+
+	if( Output->mActions[3]->mResult > Act )  {
+
+		uint16 newPosition = Unit_FindBestTargetEncoded( mUnit, 1 );
+
+		Unit_SetTarget( mUnit, newPosition );
+	}
+}
+
+
+void cBot::Move() {
+
+	
 }
 
 void cBot::DestroyedBy( Unit *pAttacker ) {
@@ -221,9 +322,17 @@ void cBot::Killed( Unit *pTarget ) {
 }
 
 void cBot::TookDamage( Unit *pAttacker, uint16 pDamage  ) {
+	
+	mDamage.push_back( pDamage );
+	mDamagers.push_back( pAttacker );
 
+	if( mDamage.size() > 4 )
+		mDamage.erase( mDamage.begin() );
 
+	if( mDamagers.size() > 4 )
+		mDamagers.erase( mDamagers.begin() );
 }
+
 void cBot::GaveDamage( Unit *pUnit, uint16 pDamage ) {
 	
 }
@@ -231,16 +340,15 @@ void cBot::GaveDamage( Unit *pUnit, uint16 pDamage ) {
 void cBot::Spawn( Unit *pUnit ) {
 
 	mUnit = pUnit;
+
+	mTotalHitpoints = mUnit->o.hitpoints;
 }
 
 cBotEngine::cBotEngine() {
 
-	for(uint8 y = 0; y < 64; ++y ) {
-
-		for(uint8 x = 0; x < 64; ++x ) {
-
-			mMap[y][x] = 0;
-		}
+	for(uint8 y = 0; y < 64 * 64; ++y ) {
+		
+		mMap[y] = 0;
 	}
 
 }
@@ -339,7 +447,7 @@ void cBotEngine::Bot_Unit_Damage_Natural( Unit *pUnit ) {
 
 void cBotEngine::Bot_Map_Update( uint16 pX, uint16 pY, uint8 pColor ) {
 	
-	mMap[pX][pY] = pColor;
+	mMap[(pY * 64) + pX] = (double) pColor;
 
 }
 

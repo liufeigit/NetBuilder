@@ -3,12 +3,22 @@ class cBot {
 private:	// Members
 	std::string		 mName;
 	cNetwork		*mNetwork;
-	double			 mInput[10];
-	size_t			 mInputs;
+
+	vector<uint16>	 mDamage;
+	vector< Unit*>	 mDamagers;
+
+	double			 mInput[ 5 ];
+	double			 mInputs;
+
+	double			 mTotalHitpoints;
 
 private:	// Functions
 	void			 Load();
 	void			 Save();
+
+protected:
+
+	void			 Move();
 
 public:
 	size_t			 mSelfDeath;
@@ -33,7 +43,9 @@ public:
 class cBotEngine {
 private:
 	std::vector< cBot* >		 mBots;
-	uint8						 mMap[64][64];
+
+public:
+	double						 mMap[64 * 64];
 
 public:
 						 cBotEngine();
