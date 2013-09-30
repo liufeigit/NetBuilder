@@ -20,7 +20,9 @@ struct Object;
 extern uint16 Tools_AdjustToGameSpeed(uint16 normal, uint16 minimum, uint16 maximum, bool inverseSpeed);
 extern IndexType Tools_Index_GetType(uint16 encoded);
 extern uint16 Tools_Index_Decode(uint16 encoded);
+#ifndef _Bot_Skips
 extern uint16 Tools_Index_Encode(uint16 index, IndexType type);
+#endif
 extern bool Tools_Index_IsValid(uint16 encoded);
 extern uint16 Tools_Index_GetPackedTile(uint16 encoded);
 extern tile32 Tools_Index_GetTile(uint16 encoded);

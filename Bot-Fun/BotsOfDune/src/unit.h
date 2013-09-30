@@ -247,14 +247,18 @@ extern uint8 Unit_ActionStringToType(const char *name);
 extern uint8 Unit_MovementStringToType(const char *name);
 extern struct Unit *Unit_Create(uint16 index, uint8 typeID, uint8 houseID, tile32 position, int8 orientation);
 extern bool Unit_IsTypeOnMap(uint8 houseID, uint8 typeID);
+#ifndef _Bot_Skips
 extern void Unit_SetAction(Unit *u, ActionType action);
+#endif
 extern uint16 Unit_AddToTeam(Unit *u, struct Team *t);
 extern uint16 Unit_RemoveFromTeam(Unit *u);
 extern struct Team *Unit_GetTeam(Unit *u);
 extern void Unit_Sort(void);
 extern Unit *Unit_Get_ByPackedTile(uint16 packed);
 extern uint16 Unit_IsValidMovementIntoStructure(Unit *unit, struct Structure *s);
+#ifndef _Bot_Skips
 extern void Unit_SetDestination(Unit *u, uint16 destination);
+#endif
 extern uint16 Unit_FindClosestRefinery(Unit *unit);
 extern bool Unit_SetPosition(Unit *u, tile32 position);
 extern void Unit_Remove(Unit *u);

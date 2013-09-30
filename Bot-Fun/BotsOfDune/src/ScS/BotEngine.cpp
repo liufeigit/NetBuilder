@@ -134,6 +134,10 @@ extern "C" int16 Unit_GetTileEnterScore(Unit *unit, uint16 packed, uint16 orient
 extern "C" uint16 Unit_FindBestTargetEncoded(Unit *unit, uint16 mode);
 extern "C" void Unit_SetTarget(Unit* unit, uint16 encoded);
 extern "C" void Unit_Rotate(Unit *unit, uint16 level);
+extern "C" void Unit_SetDestination(Unit *u, uint16 destination);
+extern "C" Object *Object_GetByPackedTile(uint16 packed);
+extern "C" uint16 Tools_Index_Encode(uint16 index, IndexType type);
+extern "C" void Unit_SetAction(Unit *u, ActionType action);
 
 #include <iostream>
 #include <vector>
@@ -336,6 +340,9 @@ void cBot::Tick() {
 	if(!mUnit)
 		return;
 
+	if(  mUnit->speed > 0 )
+		return;
+
 	// Inputs
 
 	// 0: Unit Type
@@ -349,7 +356,7 @@ void cBot::Tick() {
 	mInput[0] = mUnit->o.type;
 
 	ui = &g_table_unitInfo[mUnit->o.type];
-	orientation = (int8)((mUnit->orientation[0].current + 16) & 0xE0);
+	orientation = (int8)((mUnit->orientation[0].current) & 0xE0);
 	position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 	packed = Tile_PackTile(position);
 	score = Unit_GetTileEnterScore(mUnit, packed, orientation / 32);
@@ -366,10 +373,12 @@ void cBot::Tick() {
 	mInput[3] = mUnit->o.hitpoints / mTotalHitpoints;
 
 	mInput[4]  = 0;
-	for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
-		mInput[4]  += (*DmgIT);
+	if( mDamage.size() > 0 ) {
+		for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
+			mInput[4]  += (*DmgIT);
+		}
+		mInput[4] /= mDamage.size(); 
 	}
-	mInput[4] /= mDamage.size(); 
 
 	// Hostile  in range
 	mInput[5] = (Unit_FindBestTargetEncoded( mUnit, 1 ) == 0 ? 0 : 1);
@@ -388,22 +397,39 @@ void cBot::Tick() {
 	// 2: Rotate Top
 	// 3: Attack
 
-	if( Output->mActions[0]->mResult > Act ) 
-		Unit_Move( mUnit, 1 );
+	if( Output->mActions[0]->mResult > Act ) {
+		
+		Unit_SetAction(mUnit, ACTION_MOVE);
+
+		orientation = (int8)((mUnit->orientation[0].current) & 0xE0);
+		position = Tile_MoveByOrientation(mUnit->o.position, orientation);
+		packed = Tile_PackTile(position);
+		if (Object_GetByPackedTile(packed) == NULL)  
+			Unit_SetDestination(mUnit, Tools_Index_Encode(packed, IT_TILE));
+	}
 
 
-	if( Output->mActions[1]->mResult > Act ) 
-		Unit_Rotate( mUnit, 0 );
+	if( Output->mActions[1]->mResult > Act ) {
+		Unit_SetAction(mUnit, ACTION_MOVE);
+
+		orientation = (int8)((mUnit->orientation[0].current + 16) & 0xE0);
+		position = Tile_MoveByOrientation(mUnit->o.position, orientation);
+		packed = Tile_PackTile(position);
+		if (Object_GetByPackedTile(packed) == NULL)  
+			Unit_SetDestination(mUnit, Tools_Index_Encode(packed, IT_TILE));
+	}
 
 
-	if( Output->mActions[2]->mResult > Act ) 
-		Unit_Rotate( mUnit, 1 );
+	if( Output->mActions[2]->mResult > Act ) {
+		
+	}
 
 
 	if( Output->mActions[3]->mResult > Act )  {
 
 		uint16 newPosition = Unit_FindBestTargetEncoded( mUnit, 1 );
 
+		Unit_SetAction( mUnit, ACTION_ATTACK );
 		Unit_SetTarget( mUnit, newPosition );
 	}
 }
@@ -478,8 +504,7 @@ void cBotEngine::Bot_Unit_Remove( Unit *pUnit ) {
 		if( (*BotIT)->mUnit == pUnit ) {
 			
 			std::cout << "Removed Unit!\nwe have a destroy we missed\n";
-			delete (*BotIT);
-			mBots.erase( BotIT );
+			(*BotIT)->mUnit = 0;
 			return;
 		}
 	}
