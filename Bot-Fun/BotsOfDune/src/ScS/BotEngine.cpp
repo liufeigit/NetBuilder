@@ -146,9 +146,9 @@ extern "C" void Bot_Unit_Destroyed( Unit *pUnit, Unit *pAttacker ) {
 	g_BotEngine->Bot_Unit_Destroyed( pUnit, pAttacker );
 }
 
-extern void Bot_Unit_Damage( Unit *pUnit, Unit *pAttacker ) {
+extern "C" void Bot_Unit_Damage( Unit *pUnit, Unit *pAttacker, uint16 pDamage ) {
 
-	g_BotEngine->Bot_Unit_Damage( pUnit, pAttacker );
+	g_BotEngine->Bot_Unit_Damage( pUnit, pAttacker, pDamage );
 }
 
 extern "C" void Bot_Unit_Damage_Natural( Unit *pUnit ) {
@@ -161,6 +161,11 @@ extern "C" void Bot_Unit_Remove( Unit *pUnit ) {
 	g_BotEngine->Bot_Unit_Remove( pUnit );
 }
 
+extern "C" void Bot_Map_Update( uint16 pX, uint16 pY, uint8 pColor ) {
+
+	g_BotEngine->Bot_Map_Update( pX, pY, pColor );
+}
+
 cBot::cBot( std::string pName ) {
 
 	mName = pName;
@@ -169,6 +174,12 @@ cBot::cBot( std::string pName ) {
 	mSelfDeath = 0;
 	mKills = 0;
 	mDeaths = 0;
+	mBusy = false;
+
+	mInputs = 10;
+	for( size_t Input = 0; Input < mInputs; ++Input ) {
+		mInput[ Input ] = 0;
+	}
 
 	Load();
 }
@@ -189,6 +200,9 @@ void cBot::Save() {
 
 void cBot::Tick() {
 
+	if(mBusy)
+		return;
+
 }
 
 void cBot::DestroyedBy( Unit *pAttacker ) {
@@ -196,17 +210,22 @@ void cBot::DestroyedBy( Unit *pAttacker ) {
 	if( pAttacker == 0 )
 		++mSelfDeath;
 
+	++mDeaths;
+
 	mUnit = 0;
 }
 
 void cBot::Killed( Unit *pTarget ) {
 
-	
+	mKills++;
 }
 
-void cBot::TookDamage( Unit *pAttacker ) {
+void cBot::TookDamage( Unit *pAttacker, uint16 pDamage  ) {
 
 
+}
+void cBot::GaveDamage( Unit *pUnit, uint16 pDamage ) {
+	
 }
 
 void cBot::Spawn( Unit *pUnit ) {
@@ -215,6 +234,14 @@ void cBot::Spawn( Unit *pUnit ) {
 }
 
 cBotEngine::cBotEngine() {
+
+	for(uint8 y = 0; y < 64; ++y ) {
+
+		for(uint8 x = 0; x < 64; ++x ) {
+
+			mMap[y][x] = 0;
+		}
+	}
 
 }
 
@@ -270,12 +297,50 @@ void cBotEngine::Bot_Unit_Destroyed( Unit *pDestroyed, Unit *pAttacker ) {
 
 					if( pAttacker != 0 )
 						(*BotOIT)->Killed( pDestroyed );
+
+					return;
 				}
 			}
 
-			break;
+			(*BotIT)->DestroyedBy( 0 );
+
+			return;
 		}
 	}
+}
+
+void cBotEngine::Bot_Unit_Damage( Unit *pUnit, Unit *pAttacker, uint16 pDamage ) {
+
+	for( std::vector< cBot* >::iterator BotIT = mBots.begin(); BotIT != mBots.end(); ++BotIT ) {
+
+		// Was this the destroyed unit?
+		if( (*BotIT)->mUnit == pUnit ) {
+
+			for( std::vector< cBot* >::iterator BotOIT = mBots.begin(); BotOIT != mBots.end(); ++BotOIT ) {
+
+				// Was this the attacking bot? or was there no attacker
+				if( (*BotOIT)->mUnit == pAttacker || pAttacker == 0 ) {
+
+					(*BotIT)->TookDamage( pAttacker, pDamage );
+					(*BotOIT)->GaveDamage( pUnit, pDamage );
+					return;
+				}
+			}
+
+			(*BotIT)->TookDamage( 0, pDamage );
+			return;
+		}
+	}
+}
+
+void cBotEngine::Bot_Unit_Damage_Natural( Unit *pUnit ) {
+
+}
+
+void cBotEngine::Bot_Map_Update( uint16 pX, uint16 pY, uint8 pColor ) {
+	
+	mMap[pX][pY] = pColor;
+
 }
 
 void cBotEngine::Tick() {

@@ -29,6 +29,7 @@
 #include "../timer.h"
 #include "../tools.h"
 #include "../unit.h"
+#include "../ScS/BotInterface.h"
 
 static uint32 s_tickCursor;                                 /*!< Stores last time Viewport changed the cursor spriteID. */
 static uint32 s_tickMapScroll;                              /*!< Stores last time Viewport ran MapScroll function. */
@@ -812,6 +813,7 @@ void GUI_Widget_Viewport_DrawTile(uint16 packed)
 		GUI_DrawSprite(g_screenActiveID, g_sprites[spriteID], x, y, 3, 0x4000);
 	} else {
 		GFX_PutPixel(x + 256, y + 136, colour & 0xFF);
+		Bot_Map_Update( x, y, colour & 0xFF );
 	}
 }
 

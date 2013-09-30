@@ -432,7 +432,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 			if (!(u->o.type == UNIT_SANDWORM && type == EXPLOSION_SANDWORM_SWALLOW) && u->o.type != UNIT_FRIGATE) {
 				Unit_Damage(u, hitpoints >> (distance >> 2), 0);
 				
-				Bot_Unit_Damage( u, Origin );
+				Bot_Unit_Damage( u, Origin, hitpoints >> (distance >> 2) );
 			}
 
 			if (u->o.houseID == g_playerHouseID) continue;

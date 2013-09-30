@@ -1380,7 +1380,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 				Unit_Damage(u, damage, 0);
 
 				Origin = Unit_Get_ByIndex( Tools_Index_Decode( u->originEncoded ) );
-				Bot_Unit_Damage( u, Origin );
+				Bot_Unit_Damage( u, Origin, damage );
 			}
 		} else {
 			Structure *s;

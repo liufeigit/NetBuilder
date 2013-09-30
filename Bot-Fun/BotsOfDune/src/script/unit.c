@@ -499,8 +499,9 @@ uint16 Script_Unit_Die(ScriptEngine *script)
 	u = g_scriptCurrentUnit;
 	ui = &g_table_unitInfo[u->o.type];
 
+	Bot_Unit_Destroyed( u, 0 );
 	Unit_Remove(u);
-	Bot_Unit_Destroyed( u );
+	
 
 	if (ui->movementType != MOVEMENT_WINGER) {
 		uint16 credits;
@@ -644,7 +645,7 @@ uint16 Script_Unit_Fire(ScriptEngine *script)
 				Unit_HouseUnitCount_Remove(u2);
 				Unit_Remove(u2);
 
-				Bot_Unit_Destroyed( u2 );
+				Bot_Unit_Destroyed( u2, u );
 			}
 
 			Map_MakeExplosion(ui->explosionType, u->o.position, 0, 0);
