@@ -138,6 +138,8 @@ extern "C" void Unit_SetDestination(Unit *u, uint16 destination);
 extern "C" Object *Object_GetByPackedTile(uint16 packed);
 extern "C" uint16 Tools_Index_Encode(uint16 index, IndexType type);
 extern "C" void Unit_SetAction(Unit *u, ActionType action);
+extern "C" uint8 Tile_GetPackedX(uint16 packed);
+extern "C" uint8 Tile_GetPackedY(uint16 packed);
 
 #include <iostream>
 #include <vector>
@@ -245,89 +247,32 @@ void cBot::Save() {
 }
 
 /*
-		mInput[0] = pUnitType;				// Type of unit
-		mInput[1] = pCurrentSpeed;			// Speed on the current tile
-		mInput[2] = pScoreToEnter;			// 256 if tile is not accessable, -1 when it is an accessable structure, or a score to enter the tile otherwise.
-		mInput[3] = pDamagedPercent;		// Percentage of damage 
-		mInput[4] = pDamageAverageTicks;	// average damage over the last 5 engine ticks
-		mInput[5] = pHostileInRange;		// hostile in attack range
-		mInput[6] = pFriendlyInRange;		// friendly in attack range
-		mInputs = 7;
 
-		mOutput[0] = pOutMoveForward;		// Mov forward
-		mOutput[1] = pOutRotateBottom;		// Rotate bottom of unit
-		mOutput[2] = pOutRotateTop;			// Rotate top of unit
-		mOutput[3] = pAttack;				// Attack best in range target
 		*/
 
-void cBot::DoTrain( std::vector<sTrainingData*> *pData, const double pType ) {
-
-	// Remember, we train towards these outputs.. but there are no guarantees in life :)
-	
-	for( int x = 0; x < 10; ++x ) {
-		// Forward tile not accessable, Turn Base
-		pData->push_back( new sTrainingData(
-					pType, 0, 256, 0, 0, 0, 0,		// Inputs
-					0, 1, 0, 0						// Outputs
-					));
-	}
-
-	for( int x = 0; x < 10; ++x ) {
-		
-		// Move Forward for scores < 10
-		pData->push_back( new sTrainingData(
-				pType, 0, x, 0, 0, 0, 0,		// Inputs
-				1, 0, 0, 0						// Outputs
-				));
-	}
-
-	// Rotate bottom and move forward if hostile in range
-	pData->push_back( new sTrainingData(
-		pType, 0, 0, 0, 0, 1, 0,		// Inputs
-		1, 1, 0, 0						// Outputs
-		));
-
-	// Attack if hostile in range
-	pData->push_back( new sTrainingData(
-		pType, 0, 0, 0, 0, 1, 0,		// Inputs
-		0, 0, 0, 1						// Outputs
-		));
-
-	// Receiving Damage over last 5 ticks, Rotate Bottom, move forward 
-	pData->push_back( new sTrainingData(
-		pType, 0, 0, 0, 10, 1, 0,		// Inputs
-		1, 1, 0, 0						// Outputs
-		));
-}
-
 void cBot::Train( unsigned int pSeed ) {
+	mLastTrain = mTick;
 	if( !mSeed )
 		mSeed = pSeed;
 
-	srand ( pSeed );
+	srand ( mSeed );
 
-	std::vector<sTrainingData*> Training[15];
-
-	size_t x = 0;
-	for( size_t UnitType = UNIT_INFANTRY; UnitType <= UNIT_QUAD; ++UnitType ) {
-		
-		DoTrain( &Training[x++], (double) UnitType );
-
-	}
+	sTrainingSet *Set = new sTrainingSet();
 
 
-	for( size_t x = 0; x < 15; ++x ) {
+	for( size_t y = 0; y < 3; ++y ) {
+		for( size_t x = 0; x < 15; ++x ) {
 
-		for( std::vector<sTrainingData*>::iterator TrainIT = Training[ x ].begin(); TrainIT != Training[ x ].end(); ++TrainIT ) {
+			for( vector< sTrainingData* >::iterator TrainIT = Set->mData.begin(); TrainIT != Set->mData.end(); ++TrainIT ) {
 			
-			double Error = mNetwork->Backward( (*TrainIT)->mInput, (*TrainIT)->mInputs, (*TrainIT)->mOutput, (*TrainIT)->mOutputs );
+				double Error = mNetwork->Backward( (*TrainIT)->mInput, (*TrainIT)->mInputs, (*TrainIT)->mOutput, (*TrainIT)->mOutputs );
 
-		// Should this be?
-			if( Error < 0.005 )
-				break;
+			// Should this be?
+				if( Error < 0.005 )
+					break;
+			}
 		}
 	}
-
 }
 
 void cBot::Tick() {
@@ -343,53 +288,142 @@ void cBot::Tick() {
 	if(!mUnit)
 		return;
 
+	if( mLastTrain > mTick + 100 ) {
+		Train(0);
+		mLastTrain = mTick;
+	}
+
 	if(  mUnit->actionID == ACTION_MOVE || mUnit->actionID == ACTION_ATTACK )
 		return;
 
 	// Inputs
 
-	// 0: Unit Type
-	// 1: Current Speed on this tile
-	// 2: Score to enter forward tile
-	// 3: Damaged Percent
-	// 4: Average Damage over last 5 ticks
-	// 5: pHostileInRange
-	// 6: pFriendlyInRange
+	// 0: 
 
-	mInput[0] = mUnit->o.type;
-
-	ui = &g_table_unitInfo[mUnit->o.type];
 	orientation = (int8)((mUnit->orientation[0].current) & 0xE0);
 	position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 	packed = Tile_PackTile(position);
-	score = Unit_GetTileEnterScore(mUnit, packed, orientation / 32);
-	if( score == 256 )
-		mLastDirChange = 0;
 
-	type = Map_GetLandscapeType(packed);
-	if (type == LST_STRUCTURE) 
-		type = LST_CONCRETE_SLAB;
-	speed = g_table_landscapeInfo[type].movementSpeed[ui->movementType];
+	//mMap[ (position.y * 64) + position.x ];
+	vector<  vector< uint8 >  > See;
 
-	mInput[1] = (double) speed;
+	size_t count = 1;
+	size_t StartY = Tile_GetPackedY(packed);
+	size_t StartX = Tile_GetPackedX(packed);
 
-	mInput[2] = (double) score;
+	// add 5 rows of the map
+	for( size_t row = 0; row < 5; ++row ) {
+		vector< uint8 > Row;
 
-	mInput[3] = mUnit->o.hitpoints / mTotalHitpoints;
+		switch( orientation ) {
+		case 0x00:	// y --
+			for( size_t X = StartX - count; X <= StartX + count; ++ X ) {
 
-	mInput[4]  = 0;
-	if( mDamage.size() > 0 ) {
-		for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
-			mInput[4]  += (*DmgIT);
-		}
-		mInput[4] /= mDamage.size(); 
+				Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
+			}
+			--StartY;
+			++count;
+			break;
+
+		case 0xC0:	// x --
+
+			for( size_t Y = StartY - count; Y <= StartY + count; ++ Y ) {
+
+				Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
+			}
+			--StartX;
+			++count;
+
+			break;
+
+		case 0x40:	// x ++
+			
+			for( size_t Y = StartY - count; Y <= StartY + count; ++ Y ) {
+
+				Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
+			}
+			++StartX;
+			++count;
+			break;
+
+		case 0x80:	// y ++
+			for( size_t X = StartX - count; X <= StartX + count; ++ X ) {
+
+				Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
+			}
+			++StartY;
+			++count;
+			break;
+		}	 
+
+		See.push_back( Row );
 	}
 
-	// Hostile  in range
-	mInput[5] = (Unit_FindBestTargetEncoded( mUnit, 1 ) == 0 ? 0 : 1);
+	size_t x = 0, y = See.size();
+	// each row
+	for( vector<  vector< uint8 >  >::iterator SeeIT = See.begin(); SeeIT != See.end(); ++SeeIT ) {
 
-	// Friendly in range
-	mInput[6] = 0;
+		// each piece
+		for( vector< uint8 >::iterator MapIT = (*SeeIT).begin(); MapIT != (*SeeIT).end(); ++MapIT ) {
+
+			switch( (*MapIT) ) {
+
+			case 0:	// wall
+				mInput[x] = 0;
+				mInput[x+1] = y;
+				break;
+
+			case 215: // spice
+			case 216: // spice 
+			case 88:  // sand
+			case 89:
+				mInput[x] = 1;	// 
+				mInput[x+1] = y;	// 
+				break;
+
+			// 215 spice
+
+			case 29:	// rock
+			case 30:	// rock
+				mInput[x] = 2;	// Rock
+				mInput[x+1] = y;	// 
+				break;
+
+			case 160: // blue
+				mInput[x] = 3;	// Friend
+				mInput[x+1] = y;	// 
+				break;
+
+			case 176: // green
+			case 144: // red
+			case 208: // purple
+				mInput[x] = 4;	// Enemy
+				mInput[x+1] = y;	// 
+				break;
+
+			default:
+				mInput[x] = 5;
+				mInput[x+1] = y;
+				break;
+			}
+
+			x += 2;
+		}
+
+		--y;
+	}
+	if(!mUnit)
+		return;
+
+
+	mInput[x]  = 0;
+	if( mDamage.size() > 0 ) {
+		for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
+			mInput[x]  += (*DmgIT);
+		}
+		mInput[x] /= mDamage.size(); 
+	}
+
 
 	cConnection *Output = mNetwork->Forward( mInput, mInputs );
 
@@ -398,11 +432,11 @@ void cBot::Tick() {
 	// Outputs
 
 	// 0: Move Forward
-	// 1: Rotate Bottom
-	// 2: Rotate Top
+	// 1: Rotate Bottom Right
+	// 2: Rotate Bottom Left
 	// 3: Attack
 
-	if( Output->mActions[0]->mResult > Act && Output->mActions[1]->mResult < Act ) {
+	if( Output->mActions[0]->mResult > Act ) {
 		
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
@@ -414,12 +448,11 @@ void cBot::Tick() {
 	}
 
 
-	if( Output->mActions[1]->mResult > Act || mTick - mLastDirChange > 10 ) {
-		mLastDirChange = mTick;
+	if( Output->mActions[1]->mResult > Act) {
 
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
-		orientation = (int8)((mUnit->orientation[0].current + 32) & 0xE0);
+		orientation = (int8)((mUnit->orientation[0].current + 64) & 0xE0);
 		position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 		packed = Tile_PackTile(position);
 		if (Object_GetByPackedTile(packed) == NULL)  
@@ -428,9 +461,15 @@ void cBot::Tick() {
 
 
 	if( Output->mActions[2]->mResult > Act ) {
-		
-	}
+		Unit_SetAction(mUnit, ACTION_MOVE);
 
+		orientation = (int8)((mUnit->orientation[0].current - 64) & 0xE0);
+		position = Tile_MoveByOrientation(mUnit->o.position, orientation);
+		packed = Tile_PackTile(position);
+		if (Object_GetByPackedTile(packed) == NULL)  
+			Unit_SetDestination(mUnit, Tools_Index_Encode(packed, IT_TILE));
+	
+	}
 
 	if( Output->mActions[3]->mResult > Act )  {
 
@@ -491,13 +530,13 @@ cBotEngine::cBotEngine() {
 	mBots.push_back( new cBot( "1" ) );
 	mBots.push_back( new cBot( "2" ) );
 	mBots.push_back( new cBot( "3" ) );
-	mBots.push_back( new cBot( "4" ) );
+	mBots.push_back( new cBot( "4" ) );/*
 	mBots.push_back( new cBot( "5" ) );
 	mBots.push_back( new cBot( "6" ) );
 	mBots.push_back( new cBot( "7" ) );
 	mBots.push_back( new cBot( "8" ) );
 	mBots.push_back( new cBot( "9" ) );
-	mBots.push_back( new cBot( "10" ) );
+	mBots.push_back( new cBot( "10" ) );*/
 }
 
 cBotEngine::~cBotEngine() {

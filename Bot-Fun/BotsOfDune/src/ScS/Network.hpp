@@ -136,7 +136,7 @@ public:
 
 						cAction *ActionsUp = ConnectionUp->mActions[ LayerUpNode ];
 
-						Error += ActionsUp->mWeight[ Node ] * Action->mDelta;
+						Error += ActionsUp->mWeight[ LayerUpNode ] * ActionsUp->mDelta;
 					}
 
 
@@ -178,6 +178,7 @@ public:
 		}
 	}
 
+
 	double MeanSqueared( cConnection *pConnection ) {
 		double sum = 0;
 
@@ -210,7 +211,7 @@ public:
 	double Backward( const double *pInput, const size_t pInputs, const double *pTarget, const size_t pTargets ) {
 
 		if( mConnections.size() == 0 )
-			CreateLayers( 5, pInputs, pTargets );
+			CreateLayers( 9, pInputs, pTargets );
 
 		double Error = 0;
 
@@ -222,7 +223,7 @@ public:
 
 		return Error;
 	}
-
+	
 	cConnection *Forward( const double *pInputs, const size_t pInputCount ) {
 
 		// Load inputs
@@ -258,6 +259,7 @@ public:
 
 		return mConnections[ mConnections.size() -1] ;
 	}
+	
 	
 	bool Load( string pFile ) {
 		std::ifstream in(pFile,std::ios::binary);
@@ -363,6 +365,8 @@ public:
 
 			// Ensure minimum layers
 			if(MinLayer <= 1) {
+				if(DecSize == 0 )
+					break;
 
 				// Enough outputs by two?
 				if( (Outputs - (DecSize * 2)) >= pOutputs )

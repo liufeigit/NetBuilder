@@ -1090,12 +1090,14 @@ static void GameLoop_Main(void)
 
 			//GameLoop_Team();
 					
-			Bot_Tick();
 			GameLoop_Unit();
 			//GameLoop_Structure();
 			//GameLoop_House();
 
 			GUI_DrawScreen(SCREEN_0);
+
+			Bot_Tick();
+
 		}
 
 		GUI_DisplayText(NULL, 0);

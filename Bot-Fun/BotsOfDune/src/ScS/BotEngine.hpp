@@ -8,36 +8,97 @@
 *                                  ScS
 **/
 
+#define WALL 0
+#define SAND 1
+#define ROCK 2
+#define FRIEND 3
+#define ENEMY 4
+
 struct sTrainingData {
-	double mInput[7];
+	double mInput[71];
 	size_t mInputs;
 
-	double mOutput[4];
+	double mOutput[5];
 	size_t mOutputs;
 
-	sTrainingData( double pUnitType, double pCurrentSpeed, double pScoreToEnter, double pDamagedPercent, double pDamageAverageTicks, double pHostileInRange, double  pFriendlyInRange,
-				   double pOutMoveForward, double pOutRotateBottom, double pOutRotateTop, double pAttack ) {
+	sTrainingData( vector< vector< double > >  pInput, double pDamage,
+					double pOutputForward, double pOutputTurnLeft, double pOutputTurnRight, double pOutputFire ) {
 		
-					   mInputs = 7;
+		mInputs = 71;
 		mOutputs = 4;
 
 		Zero( &mInput[0], mInputs );
 		Zero( &mOutput[0], mOutputs );
 
-		mInput[0] = pUnitType;				// Type of unit
-		mInput[1] = pCurrentSpeed;			// Speed on the current tile
-		mInput[2] = pScoreToEnter;			// 256 if tile is not accessable, -1 when it is an accessable structure, or a score to enter the tile otherwise.
-		mInput[3] = pDamagedPercent;		// Percentage of damage 
-		mInput[4] = pDamageAverageTicks;	// average damage over the last 5 engine ticks
-		mInput[5] = pHostileInRange;		// hostile in attack range
-		mInput[6] = pFriendlyInRange;		// friendly in attack range
-		mInputs = 7;
+		size_t count = 0;
 
-		mOutput[0] = pOutMoveForward;		// Mov forward
-		mOutput[1] = pOutRotateBottom;		// Rotate bottom of unit
-		mOutput[2] = pOutRotateTop;			// Rotate top of unit
-		mOutput[3] = pAttack;				// Attack best in range target
-		mOutputs=4;
+		for( size_t x = 0; x < pInput.size(); ++x ) {
+
+			for( size_t y = 0; y < pInput[x].size(); y+=2 ) {
+
+				mInput[count] = pInput[x][y];
+				mInput[count+1] = pInput[x][y+1];
+
+				count += 2;
+			}
+
+		}
+
+		mInput[70] = pDamage;
+
+		mOutput[0] = pOutputForward;
+		mOutput[1] = pOutputTurnLeft;
+		mOutput[2] = pOutputTurnRight;
+		mOutput[3] = pOutputFire;
+
+	}
+
+
+};
+
+struct sTrainingSet {
+	vector< sTrainingData* > mData;
+
+	vector< double > CreateRow( size_t pCount, double pData, double pWeight ) {
+		vector< double > Row;
+
+		for( size_t x = 0; x < pCount; ++x) {
+			Row.push_back( pData );
+			Row.push_back( pWeight );
+		}
+
+		return Row;
+	}
+
+	vector< vector< double > > CreateAll( double pType ) {
+		vector< vector< double > > Rows;
+
+		Rows.push_back(CreateRow(3, pType, 5 ));
+		Rows.push_back(CreateRow(5, pType, 4 ));
+		Rows.push_back(CreateRow(7, pType, 3 ));
+		Rows.push_back(CreateRow(9, pType, 2 ));
+		Rows.push_back(CreateRow(11, pType, 1 ));
+
+		return Rows;
+	}
+
+	sTrainingSet() {
+
+		vector< vector< double > > Rocks = CreateAll( ROCK );
+		vector< vector< double > > Sand = CreateAll( SAND );
+		vector< vector< double > > Enemy = CreateAll( ENEMY );
+
+		mData.push_back( new sTrainingData( Rocks, 0, 1, 0, 0, 0 ) );
+		mData.push_back( new sTrainingData( Sand,  0, 1, 0, 0, 0 ) );
+
+		mData.push_back( new sTrainingData( Rocks, 0, 1, 1, 0, 0 ) );
+		mData.push_back( new sTrainingData( Sand,  0, 1, 1, 0, 0 ) );
+
+		mData.push_back( new sTrainingData( Sand,  0, 1, 0, 1, 0 ) );
+		mData.push_back( new sTrainingData( Rocks,  0, 1, 0, 1, 0 ) );
+
+		mData.push_back( new sTrainingData( Enemy, 0, 0, 0, 0, 1 ) );
+
 	}
 
 };
@@ -50,12 +111,13 @@ private:	// Members
 	vector<uint16>	 mDamage;
 	vector< Unit*>	 mDamagers;
 
-	double			 mInput[ 7 ];
+	double			 mInput[ 71 ];
 	double			 mInputs;
 
 	double			 mTotalHitpoints;
 	unsigned int	 mSeed;
 	unsigned int	 mLastDirChange;
+	unsigned int	 mLastTrain;
 
 private:	// Functions
 	void			 Load();
