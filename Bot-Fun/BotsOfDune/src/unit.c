@@ -1468,6 +1468,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 
 				if (unit->o.flags.s.degrades && (Tools_Random_256() & 3) == 0) {
 					Unit_Damage(unit, 1, 0);
+					Bot_Unit_Damage_Natural( unit );
 				}
 
 				if (unit->o.type == UNIT_SABOTEUR) {

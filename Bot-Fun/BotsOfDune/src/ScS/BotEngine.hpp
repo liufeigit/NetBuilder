@@ -15,16 +15,16 @@
 #define ENEMY 4
 
 struct sTrainingData {
-	double mInput[81];
+	double mInput[7];
 	size_t mInputs;
 
-	double mOutput[5];
+	double mOutput[4];
 	size_t mOutputs;
 
-	sTrainingData( vector< vector< double > >  pInput, double pDamage,
+	sTrainingData( double pInputVision0, double pInputVision1, double pInputVision2, double pInputVision3, double pInputVision4, double pDamageOverLast5Ticks, double pEnemyInRange,
 					double pOutputForward, double pOutputTurnLeft, double pOutputTurnRight, double pOutputFire ) {
 		
-		mInputs = 81;
+		mInputs = 7;
 		mOutputs = 4;
 
 		Zero( &mInput[0], mInputs );
@@ -32,19 +32,13 @@ struct sTrainingData {
 
 		size_t count = 0;
 
-		for( size_t x = 0; x < pInput.size(); ++x ) {
-
-			for( size_t y = 0; y < pInput[x].size(); y+=2 ) {
-
-				mInput[count] = pInput[x][y];
-				mInput[count+1] = pInput[x][y+1];
-
-				count += 2;
-			}
-
-		}
-
-		mInput[80] = pDamage;
+		mInput[0] = pInputVision0;
+		mInput[1] = pInputVision1;
+		mInput[2] = pInputVision2;
+		mInput[3] = pInputVision3;
+		mInput[4] = pInputVision3;
+		mInput[5] = pDamageOverLast5Ticks;
+		mInput[6] = pEnemyInRange;
 
 		mOutput[0] = pOutputForward;
 		mOutput[1] = pOutputTurnLeft;
@@ -59,19 +53,9 @@ struct sTrainingData {
 struct sTrainingSet {
 	vector< sTrainingData* > mData;
 
-	vector< double > CreateRow( size_t pCount, double pData, double pWeight ) {
-		vector< double > Row;
 
-		for( size_t x = 0; x < pCount; ++x) {
-			Row.push_back( pData );
-			Row.push_back( pWeight );
-		}
-
-		return Row;
-	}
-
-	vector< vector< double > > CreateAll( double pType ) {
-		vector< vector< double > > Rows;
+	 vector< double > Create( double pType0, double pType1, double pType2, double pType3, double pType4  ) {
+		 vector< double > Row;
 		/*[5](
 		          [4](29 '',29 '',29 '',29 ''),
 		 [6](88 'X',88 'X',88 'X',88 'X',88 'X',215 '×'),
@@ -80,35 +64,38 @@ struct sTrainingSet {
 		[12](88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',89 'Y',0))
 		*/
 
-		Rows.push_back(CreateRow(4, pType, 5 ));
-		Rows.push_back(CreateRow(6, pType, 4 ));
-		Rows.push_back(CreateRow(8, pType, 3 ));
-		Rows.push_back(CreateRow(10, pType, 2 ));
-		Rows.push_back(CreateRow(12, pType, 1 ));
+		Row.push_back( pType0 );
+		Row.push_back( pType1 );
+		Row.push_back( pType2 );
+		Row.push_back( pType3 );
+		Row.push_back( pType4 );
 
-		return Rows;
+		return Row;
 	}
 
 	sTrainingSet() {
 
-		vector< vector< double > > Rocks = CreateAll( ROCK );
-		vector< vector< double > > Sand = CreateAll( SAND );
-		vector< vector< double > > Enemy = CreateAll( ENEMY );
-		vector< vector< double > > Wall = CreateAll( WALL );
+		// Forward
+		mData.push_back( new sTrainingData( ROCK, ROCK, ROCK, ROCK, ROCK, 0, 0,   1, 0, 0, 0 ) );
+
+		// Left/Rigt
+		mData.push_back( new sTrainingData( ROCK, ROCK, SAND, ROCK, ROCK, 0, 0,   0, 1, 1, 0 ) );
 
 
-		mData.push_back( new sTrainingData( Wall, 0, 0, 1, 1 , 0 ) );
-		mData.push_back( new sTrainingData( Wall, 0, 0, 0, 1 , 0 ) );
-		mData.push_back( new sTrainingData( Wall, 0, 0, 1, 0 , 0 ) );
+		// Left
+		mData.push_back( new sTrainingData( SAND, SAND, WALL, WALL, SAND, 0, 0,   0, 1, 0, 0 ) );
+		mData.push_back( new sTrainingData( ROCK, ROCK, WALL, WALL, ROCK, 0, 0,   0, 1, 0, 0 ) );
 
-		mData.push_back( new sTrainingData( Rocks, 0, 0, 1, 1, 0 ) );
-		mData.push_back( new sTrainingData( Sand,  0, 0, 1, 1, 0 ) );
+		// Right
+		mData.push_back( new sTrainingData( ROCK, WALL, WALL, ROCK, ROCK, 0, 0,   0, 0, 1, 0 ) );
 
-		mData.push_back( new sTrainingData( Rocks, 0, 1, 0, 0, 0 ) );
-		mData.push_back( new sTrainingData( Sand,  0, 1, 0, 0, 0 ) );
+		// Forward
+		mData.push_back( new sTrainingData( WALL, SAND, ROCK, SAND, WALL, 0, 0,   1, 0, 0, 0 ) );
+		mData.push_back( new sTrainingData( WALL, WALL, WALL, WALL, WALL, 0, 0,   0, 1, 1, 0 ) );
 
-		mData.push_back( new sTrainingData( Enemy, 0, 0, 0, 0, 1 ) );
-
+		// Enemy in range
+		mData.push_back( new sTrainingData( SAND, SAND, SAND, SAND, SAND, 0, 1,   0, 1, 1, 1 ) );
+		
 	}
 
 };
@@ -121,8 +108,8 @@ private:	// Members
 	vector<uint16>	 mDamage;
 	vector< Unit*>	 mDamagers;
 
-	double			 mInput[ 81 ];
-	double			 mInputs;
+	double			 mInput[ 7 ];
+	size_t			 mInputs;
 
 	double			 mTotalHitpoints;
 	unsigned int	 mSeed;

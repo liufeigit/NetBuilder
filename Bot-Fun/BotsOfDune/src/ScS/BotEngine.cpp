@@ -219,7 +219,7 @@ cBot::cBot( std::string pName ) {
 	mUnit = 0;
 	mTick = 0;
 
-	mInputs = 81;
+	mInputs = 7;
 
 	for( size_t Input = 0; Input < mInputs; ++Input ) {
 		mInput[ Input ] = 0;
@@ -260,7 +260,7 @@ void cBot::Train( unsigned int pSeed ) {
 	sTrainingSet *Set = new sTrainingSet();
 
 
-		for( size_t x = 0; x < 15; ++x ) {
+		for( size_t x = 0; x < 3; ++x ) {
 
 			for( vector< sTrainingData* >::iterator TrainIT = Set->mData.begin(); TrainIT != Set->mData.end(); ++TrainIT ) {
 			
@@ -275,98 +275,84 @@ void cBot::Train( unsigned int pSeed ) {
 }
 
 void cBot::LayerInputsLoad() {
-	const UnitInfo *ui;
 	int8 orientation;
 	tile32 position;
 	uint16 packed;
-	uint16 type;
-	uint16 speed;
-	int16 score;
 
 	orientation = (int8)((mUnit->orientation[0].current) & 0xE0);
 	position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 	packed = Tile_PackTile(position);
 
-	vector<  vector< uint8 >  > See;
+	vector< double >   Row;
 
 	size_t count = 2;
 	size_t StartY = Tile_GetPackedY(packed);
 	size_t StartX = Tile_GetPackedX(packed);
 
 	// add 5 rows of the map
-	for( size_t row = 0; row < 5; ++row ) {
-		vector< uint8 > Row;
-
-		switch( orientation ) {
-		case 0x00:	// y --
-			for( int X = StartX - count; X < StartX + count; ++ X ) {
+	switch( orientation ) {
+	case 0x00:	// y --
+		for( int X = StartX - count; X <= StartX + count; ++ X ) {
 				
-				if( X < 0 || X > 64 || StartY < 0 || StartY >= 64 )
-					Row.push_back( 0 );
-				else
-					Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
-			}
-			--StartY;
-			++count;
-			break;
+			if( X < 0 || X > 64 || StartY < 0 || StartY >= 64 )
+				Row.push_back( 0 );
+			else
+				Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
+		}
+		--StartY;
+		++count;
+		break;
 
-		case -64:	// x --
+	case -64:	// x --
 
-			for( int Y = StartY - count; Y < StartY + count; ++ Y ) {
+		for( int Y = StartY - count; Y <= StartY + count; ++ Y ) {
 				
-				if( Y < 0 || Y > 64 || StartX < 0 || StartX >= 64 )
-					Row.push_back( 0 );
-				else
-					Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
-			}
-			--StartX;
-			++count;
+			if( Y < 0 || Y > 64 || StartX < 0 || StartX >= 64 )
+				Row.push_back( 0 );
+			else
+				Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
+		}
+		--StartX;
+		++count;
 
-			break;
+		break;
 
-		case 64:	// x ++
+	case 64:	// x ++
 			
-			for( int Y = StartY - count; Y < StartY + count; ++ Y ) {
+		for( int Y = StartY - count; Y <= StartY + count; ++ Y ) {
 
-				if( Y < 0 || Y > 64 ||  StartX < 0 || StartX >= 64  )
-					Row.push_back( 0 );
-				else
-					Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
-			}
-			++StartX;
-			++count;
-			break;
+			if( Y < 0 || Y > 64 ||  StartX < 0 || StartX >= 64  )
+				Row.push_back( 0 );
+			else
+				Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
+		}
+		++StartX;
+		++count;
+		break;
 
-		case -128:	// y ++
-			for( int X = StartX - count; X < StartX + count; ++ X ) {
+	case -128:	// y ++
+		for( int X = StartX - count; X <= StartX + count; ++ X ) {
 
-				if( X < 0 || X > 64 || StartY < 0 || StartY >= 64  )
-					Row.push_back( 0 );
-				else
-					Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
-			}
-			++StartY;
-			++count;
-			break;
-		}	 
-
-		See.push_back( Row );
-	}
+			if( X < 0 || X > 64 || StartY < 0 || StartY >= 64  )
+				Row.push_back( 0 );
+			else
+				Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
+		}
+		++StartY;
+		++count;
+		break;
+	}	 
 
 	Zero( mInput, mInputs );
 
-	size_t x = 0, y = See.size();
-	// each row
-	for( vector<  vector< uint8 >  >::iterator SeeIT = See.begin(); SeeIT != See.end(); ++SeeIT ) {
-
+	size_t x = 0;
 		// each piece
-		for( vector< uint8 >::iterator MapIT = (*SeeIT).begin(); MapIT != (*SeeIT).end(); ++MapIT ) {
+		for( vector< double >::iterator MapIT = Row.begin(); MapIT != Row.end(); ++MapIT ) {
 
-			switch( (*MapIT) ) {
+			switch( (size_t) (*MapIT) ) {
 
 			case 0:	// wall
 				mInput[x] = 0;
-				mInput[x+1] = y;
 				break;
 
 			case 215: // spice
@@ -374,7 +360,6 @@ void cBot::LayerInputsLoad() {
 			case 88:  // sand
 			case 89:
 				mInput[x] = 1;	// 
-				mInput[x+1] = y;	// 
 				break;
 
 			// 215 spice
@@ -382,51 +367,51 @@ void cBot::LayerInputsLoad() {
 			case 29:	// rock
 			case 30:	// rock
 				mInput[x] = 2;	// Rok
-				mInput[x+1] = y;	// c
 				break;
 
 			case 160: // blue
 				mInput[x] = 3;	// Friend
-				mInput[x+1] = y;	// 
 				break;
 
 			case 176: // green
 			case 144: // red
 			case 208: // purple
 				mInput[x] = 4;	// Enemy
-				mInput[x+1] = y;	// 
 				break;
 
 			default:
 				mInput[x] = 5;
-				mInput[x+1] = y;
 				break;
 			}
 
-			x += 2;
+			++x;
 		}
-
-		--y;
-	}	
 	
 	// Damage over last 5 ticks
 	mInput[x]  = 0;
+
 	if( mDamage.size() > 0 ) {
 		for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
 			mInput[x]  += (*DmgIT);
 		}
 		mInput[x] /= mDamage.size(); 
 	}
+
+	++x;
+	uint16 newPosition = Unit_FindBestTargetEncoded( mUnit, 1 );
+	//
+	if( newPosition != 0 )
+		mInput[x] = 1;
+	else
+		mInput[x] = 0;
+
+
 }
 
 void cBot::LayerOutputsFire( cConnection *pLayerOutputs ) {
-	const UnitInfo *ui;
 	int8 orientation;
 	tile32 position;
 	uint16 packed;
-	uint16 type;
-	uint16 speed;
-	int16 score;
 
 	double Act = 0.51;
 	
@@ -547,7 +532,8 @@ cBotEngine::cBotEngine() {
 	}
 
 	cout << "Creating Bots\n";
-	mBots.push_back( new cBot( "0" ) );/*
+	mBots.push_back( new cBot( "0" ) );
+	/*
 	mBots.push_back( new cBot( "1" ) );
 	mBots.push_back( new cBot( "2" ) );
 	mBots.push_back( new cBot( "3" ) );
