@@ -211,12 +211,12 @@ public:
 	double Backward( const double *pInput, const size_t pInputs, const double *pTarget, const size_t pTargets ) {
 
 		if( mConnections.size() == 0 )
-			CreateLayers( 9, pInputs, pTargets );
+			CreateLayers( 6, pInputs, pTargets );
 
 		double Error = 0;
 
 		// Train
-		for( size_t Iteration = 0; Iteration < 10; ++Iteration ) {
+		for( size_t Iteration = 0; Iteration < 3; ++Iteration ) {
 
 			Error = TrainPattern( pInput, pInputs, pTarget, pTargets );
 		}

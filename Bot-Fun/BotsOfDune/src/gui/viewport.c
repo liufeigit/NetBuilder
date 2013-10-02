@@ -564,7 +564,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 			if ((!u->o.flags.s.isDirty || u->o.flags.s.isNotOnMap) && !forceRedraw && !BitArray_Test(g_dirtyViewport, curPos)) continue;
 			u->o.flags.s.isDirty = false;
 
-			if (!g_map[curPos].isUnveiled && !g_debugScenario) continue;
+			//if (!g_map[curPos].isUnveiled && !g_debugScenario) continue;
 
 			ui = &g_table_unitInfo[u->o.type];
 
@@ -813,6 +813,7 @@ void GUI_Widget_Viewport_DrawTile(uint16 packed)
 		GUI_DrawSprite(g_screenActiveID, g_sprites[spriteID], x, y, 3, 0x4000);
 	} else {
 		GFX_PutPixel(x + 256, y + 136, colour & 0xFF);
+
 		Bot_Map_Update( x, y, colour & 0xFF );
 	}
 }

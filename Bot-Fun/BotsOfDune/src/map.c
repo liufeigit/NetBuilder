@@ -114,9 +114,9 @@ void Map_SetSelection(uint16 packed)
 			const StructureInfo *si;
 
 			si = &g_table_structureInfo[s->o.type];
-			if (s->o.houseID == g_playerHouseID && g_selectionType != SELECTIONTYPE_MENTAT) {
-				GUI_DisplayHint(si->o.hintStringID, si->o.spriteID);
-			}
+			//if (s->o.houseID == g_playerHouseID && g_selectionType != SELECTIONTYPE_MENTAT) {
+			//	GUI_DisplayHint(si->o.hintStringID, si->o.spriteID);
+			//}
 
 			packed = Tile_PackTile(s->o.position);
 
@@ -347,7 +347,7 @@ bool Map_IsPositionUnveiled(uint16 position)
 
 	t = &g_map[position];
 
-	if (!t->isUnveiled) return false;
+	if (!t->isUnveiled) return true;
 	if (!Sprite_IsUnveiled(t->overlaySpriteID)) return false;
 
 	return true;
@@ -612,7 +612,7 @@ void Map_Update(uint16 packed, uint16 type, bool ignoreInvisible)
 		0
 	};
 
-	if (!ignoreInvisible && !Map_IsTileVisible(packed)) return;
+	//if (!ignoreInvisible && !Map_IsTileVisible(packed)) return;
 
 	switch (type) {
 		default:

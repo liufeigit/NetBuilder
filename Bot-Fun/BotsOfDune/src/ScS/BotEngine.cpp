@@ -219,7 +219,7 @@ cBot::cBot( std::string pName ) {
 	mUnit = 0;
 	mTick = 0;
 
-	mInputs = 5;
+	mInputs = 81;
 
 	for( size_t Input = 0; Input < mInputs; ++Input ) {
 		mInput[ Input ] = 0;
@@ -260,7 +260,6 @@ void cBot::Train( unsigned int pSeed ) {
 	sTrainingSet *Set = new sTrainingSet();
 
 
-	for( size_t y = 0; y < 3; ++y ) {
 		for( size_t x = 0; x < 15; ++x ) {
 
 			for( vector< sTrainingData* >::iterator TrainIT = Set->mData.begin(); TrainIT != Set->mData.end(); ++TrainIT ) {
@@ -272,10 +271,10 @@ void cBot::Train( unsigned int pSeed ) {
 					break;
 			}
 		}
-	}
+
 }
 
-void cBot::Tick() {
+void cBot::LayerInputsLoad() {
 	const UnitInfo *ui;
 	int8 orientation;
 	tile32 position;
@@ -283,31 +282,14 @@ void cBot::Tick() {
 	uint16 type;
 	uint16 speed;
 	int16 score;
-	++mTick;
-
-	if(!mUnit)
-		return;
-
-	if( mLastTrain > mTick + 100 ) {
-		Train(0);
-		mLastTrain = mTick;
-	}
-
-	if(  mUnit->actionID == ACTION_MOVE || mUnit->actionID == ACTION_ATTACK )
-		return;
-
-	// Inputs
-
-	// 0: 
 
 	orientation = (int8)((mUnit->orientation[0].current) & 0xE0);
 	position = Tile_MoveByOrientation(mUnit->o.position, orientation);
 	packed = Tile_PackTile(position);
 
-	//mMap[ (position.y * 64) + position.x ];
 	vector<  vector< uint8 >  > See;
 
-	size_t count = 1;
+	size_t count = 2;
 	size_t StartY = Tile_GetPackedY(packed);
 	size_t StartX = Tile_GetPackedX(packed);
 
@@ -317,39 +299,51 @@ void cBot::Tick() {
 
 		switch( orientation ) {
 		case 0x00:	// y --
-			for( size_t X = StartX - count; X <= StartX + count; ++ X ) {
-
-				Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
+			for( int X = StartX - count; X < StartX + count; ++ X ) {
+				
+				if( X < 0 || X > 64 || StartY < 0 || StartY >= 64 )
+					Row.push_back( 0 );
+				else
+					Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
 			}
 			--StartY;
 			++count;
 			break;
 
-		case 0xC0:	// x --
+		case -64:	// x --
 
-			for( size_t Y = StartY - count; Y <= StartY + count; ++ Y ) {
-
-				Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
+			for( int Y = StartY - count; Y < StartY + count; ++ Y ) {
+				
+				if( Y < 0 || Y > 64 || StartX < 0 || StartX >= 64 )
+					Row.push_back( 0 );
+				else
+					Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
 			}
 			--StartX;
 			++count;
 
 			break;
 
-		case 0x40:	// x ++
+		case 64:	// x ++
 			
-			for( size_t Y = StartY - count; Y <= StartY + count; ++ Y ) {
+			for( int Y = StartY - count; Y < StartY + count; ++ Y ) {
 
-				Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
+				if( Y < 0 || Y > 64 ||  StartX < 0 || StartX >= 64  )
+					Row.push_back( 0 );
+				else
+					Row.push_back( g_BotEngine->mMap[ (Y * 64 ) + StartX ] );
 			}
 			++StartX;
 			++count;
 			break;
 
-		case 0x80:	// y ++
-			for( size_t X = StartX - count; X <= StartX + count; ++ X ) {
+		case -128:	// y ++
+			for( int X = StartX - count; X < StartX + count; ++ X ) {
 
-				Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
+				if( X < 0 || X > 64 || StartY < 0 || StartY >= 64  )
+					Row.push_back( 0 );
+				else
+					Row.push_back( g_BotEngine->mMap[ (StartY * 64 ) + X ] );
 			}
 			++StartY;
 			++count;
@@ -358,6 +352,8 @@ void cBot::Tick() {
 
 		See.push_back( Row );
 	}
+
+	Zero( mInput, mInputs );
 
 	size_t x = 0, y = See.size();
 	// each row
@@ -385,8 +381,8 @@ void cBot::Tick() {
 
 			case 29:	// rock
 			case 30:	// rock
-				mInput[x] = 2;	// Rock
-				mInput[x+1] = y;	// 
+				mInput[x] = 2;	// Rok
+				mInput[x+1] = y;	// c
 				break;
 
 			case 160: // blue
@@ -411,11 +407,9 @@ void cBot::Tick() {
 		}
 
 		--y;
-	}
-	if(!mUnit)
-		return;
-
-
+	}	
+	
+	// Damage over last 5 ticks
 	mInput[x]  = 0;
 	if( mDamage.size() > 0 ) {
 		for( vector< uint16 >::iterator DmgIT = mDamage.begin(); DmgIT != mDamage.end(); ++DmgIT ) {
@@ -423,20 +417,29 @@ void cBot::Tick() {
 		}
 		mInput[x] /= mDamage.size(); 
 	}
+}
 
-
-	cConnection *Output = mNetwork->Forward( mInput, mInputs );
+void cBot::LayerOutputsFire( cConnection *pLayerOutputs ) {
+	const UnitInfo *ui;
+	int8 orientation;
+	tile32 position;
+	uint16 packed;
+	uint16 type;
+	uint16 speed;
+	int16 score;
 
 	double Act = 0.51;
 	
 	// Outputs
+	if(!mUnit)
+		return;
 
 	// 0: Move Forward
 	// 1: Rotate Bottom Right
 	// 2: Rotate Bottom Left
 	// 3: Attack
 
-	if( Output->mActions[0]->mResult > Act ) {
+	if( pLayerOutputs->mActions[0]->mResult > Act ) {
 		
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
@@ -448,7 +451,7 @@ void cBot::Tick() {
 	}
 
 
-	if( Output->mActions[1]->mResult > Act) {
+	if( pLayerOutputs->mActions[1]->mResult > Act) {
 
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
@@ -460,7 +463,7 @@ void cBot::Tick() {
 	}
 
 
-	if( Output->mActions[2]->mResult > Act ) {
+	if( pLayerOutputs->mActions[2]->mResult > Act ) {
 		Unit_SetAction(mUnit, ACTION_MOVE);
 
 		orientation = (int8)((mUnit->orientation[0].current - 64) & 0xE0);
@@ -471,13 +474,31 @@ void cBot::Tick() {
 	
 	}
 
-	if( Output->mActions[3]->mResult > Act )  {
+	if( pLayerOutputs->mActions[3]->mResult > Act )  {
 
 		uint16 newPosition = Unit_FindBestTargetEncoded( mUnit, 1 );
+		if(newPosition != 0 ) {
 
-		Unit_SetAction( mUnit, ACTION_ATTACK );
-		Unit_SetTarget( mUnit, newPosition );
+			Unit_SetAction( mUnit, ACTION_ATTACK );
+			Unit_SetTarget( mUnit, newPosition );
+		}
 	}
+}
+
+void cBot::Tick() {
+	++mTick;
+
+	if(!mUnit)
+		return;
+
+	if(  mUnit->actionID == ACTION_MOVE || mUnit->actionID == ACTION_ATTACK )
+		return;
+
+	LayerInputsLoad();
+
+	cConnection *Output = mNetwork->Forward( mInput, mInputs );
+
+	LayerOutputsFire( Output ); 
 }
 
 void cBot::DestroyedBy( Unit *pAttacker ) {
@@ -526,11 +547,11 @@ cBotEngine::cBotEngine() {
 	}
 
 	cout << "Creating Bots\n";
-	mBots.push_back( new cBot( "0" ) );
+	mBots.push_back( new cBot( "0" ) );/*
 	mBots.push_back( new cBot( "1" ) );
 	mBots.push_back( new cBot( "2" ) );
 	mBots.push_back( new cBot( "3" ) );
-	mBots.push_back( new cBot( "4" ) );/*
+	mBots.push_back( new cBot( "4" ) );
 	mBots.push_back( new cBot( "5" ) );
 	mBots.push_back( new cBot( "6" ) );
 	mBots.push_back( new cBot( "7" ) );
@@ -629,7 +650,7 @@ void cBotEngine::Bot_Unit_Damage_Natural( Unit *pUnit ) {
 }
 
 void cBotEngine::Bot_Map_Update( uint16 pX, uint16 pY, uint8 pColor ) {
-	
+
 	mMap[(pY * 64) + pX] = (double) pColor;
 
 }

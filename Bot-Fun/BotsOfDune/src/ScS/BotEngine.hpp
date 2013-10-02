@@ -15,7 +15,7 @@
 #define ENEMY 4
 
 struct sTrainingData {
-	double mInput[71];
+	double mInput[81];
 	size_t mInputs;
 
 	double mOutput[5];
@@ -24,7 +24,7 @@ struct sTrainingData {
 	sTrainingData( vector< vector< double > >  pInput, double pDamage,
 					double pOutputForward, double pOutputTurnLeft, double pOutputTurnRight, double pOutputFire ) {
 		
-		mInputs = 71;
+		mInputs = 81;
 		mOutputs = 4;
 
 		Zero( &mInput[0], mInputs );
@@ -44,7 +44,7 @@ struct sTrainingData {
 
 		}
 
-		mInput[70] = pDamage;
+		mInput[80] = pDamage;
 
 		mOutput[0] = pOutputForward;
 		mOutput[1] = pOutputTurnLeft;
@@ -72,12 +72,19 @@ struct sTrainingSet {
 
 	vector< vector< double > > CreateAll( double pType ) {
 		vector< vector< double > > Rows;
+		/*[5](
+		          [4](29 '',29 '',29 '',29 ''),
+		 [6](88 'X',88 'X',88 'X',88 'X',88 'X',215 '×'),
+		 [8](88 'X',88 'X',88 'X',88 'X',88 'X',215 '×',215 '×',215 '×'),
+		[10](88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',215 '×',89 'Y'),
+		[12](88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',88 'X',89 'Y',0))
+		*/
 
-		Rows.push_back(CreateRow(3, pType, 5 ));
-		Rows.push_back(CreateRow(5, pType, 4 ));
-		Rows.push_back(CreateRow(7, pType, 3 ));
-		Rows.push_back(CreateRow(9, pType, 2 ));
-		Rows.push_back(CreateRow(11, pType, 1 ));
+		Rows.push_back(CreateRow(4, pType, 5 ));
+		Rows.push_back(CreateRow(6, pType, 4 ));
+		Rows.push_back(CreateRow(8, pType, 3 ));
+		Rows.push_back(CreateRow(10, pType, 2 ));
+		Rows.push_back(CreateRow(12, pType, 1 ));
 
 		return Rows;
 	}
@@ -87,15 +94,13 @@ struct sTrainingSet {
 		vector< vector< double > > Rocks = CreateAll( ROCK );
 		vector< vector< double > > Sand = CreateAll( SAND );
 		vector< vector< double > > Enemy = CreateAll( ENEMY );
+		vector< vector< double > > Wall = CreateAll( WALL );
+
+
+		mData.push_back( new sTrainingData( Wall, 0, 0, 1, 1 , 0 ) );
 
 		mData.push_back( new sTrainingData( Rocks, 0, 1, 0, 0, 0 ) );
 		mData.push_back( new sTrainingData( Sand,  0, 1, 0, 0, 0 ) );
-
-		mData.push_back( new sTrainingData( Rocks, 0, 1, 1, 0, 0 ) );
-		mData.push_back( new sTrainingData( Sand,  0, 1, 1, 0, 0 ) );
-
-		mData.push_back( new sTrainingData( Sand,  0, 1, 0, 1, 0 ) );
-		mData.push_back( new sTrainingData( Rocks,  0, 1, 0, 1, 0 ) );
 
 		mData.push_back( new sTrainingData( Enemy, 0, 0, 0, 0, 1 ) );
 
@@ -111,7 +116,7 @@ private:	// Members
 	vector<uint16>	 mDamage;
 	vector< Unit*>	 mDamagers;
 
-	double			 mInput[ 71 ];
+	double			 mInput[ 81 ];
 	double			 mInputs;
 
 	double			 mTotalHitpoints;
@@ -124,7 +129,9 @@ private:	// Functions
 	void			 Save();
 	void			 Train( unsigned int pSeed );
 	void			 DoTrain(  std::vector<sTrainingData*> *pData, const double pType );
-
+	void			 LayerInputsLoad();
+	void			 LayerOutputsFire( cConnection *pLayerOutputs );
+ 
 protected:
 
 public:

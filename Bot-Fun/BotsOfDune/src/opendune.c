@@ -75,7 +75,7 @@ uint32 g_tickScenarioStart = 0;      /*!< The tick the scenario started in. */
 static uint32 s_tickGameTimeout = 0; /*!< The tick the game will timeout. */
 
 bool   g_debugGame = false;        /*!< When true, you can control the AI. */
-bool   g_debugScenario = true;    /*!< When true, you can review the scenario. There is no fog. The game is not running (no unit-movement, no structure-building, etc). You can click on individual tiles. */
+bool   g_debugScenario = false;    /*!< When true, you can review the scenario. There is no fog. The game is not running (no unit-movement, no structure-building, etc). You can click on individual tiles. */
 bool   g_debugSkipDialogs = true; /*!< When non-zero, you immediately go to house selection, and skip all intros. */
 
 void *g_readBuffer = NULL;
@@ -103,65 +103,10 @@ static bool GameLoop_IsLevelFinished(void)
 {
 	bool finish = false;
 
-	if (s_debugForceWin) return true;
-
 	/* You have to play at least 100000 ticks before you can win the game */
 	if (g_timerGame - g_tickScenarioStart < 100000) return false;
 
-	/* Check for structure counts hitting zero */
-	if ((g_scenario.winFlags & 0x3) != 0) {
-		PoolFindStruct find;
-		uint16 countStructureEnemy = 0;
-		uint16 countStructureFriendly = 0;
-
-		find.houseID = HOUSE_INVALID;
-		find.type    = 0xFFFF;
-		find.index   = 0xFFFF;
-
-		/* Calculate how many structures are left on the map */
-		while (true) {
-			Structure *s;
-
-			s = Structure_Find(&find);
-			if (s == NULL) break;
-
-			if (s->o.type == STRUCTURE_SLAB_1x1 || s->o.type == STRUCTURE_SLAB_2x2 || s->o.type == STRUCTURE_WALL) continue;
-			if (s->o.type == STRUCTURE_TURRET) continue;
-			if (s->o.type == STRUCTURE_ROCKET_TURRET) continue;
-
-			if (s->o.houseID == g_playerHouseID) {
-				countStructureFriendly++;
-			} else {
-				countStructureEnemy++;
-			}
-		}
-
-		if ((g_scenario.winFlags & 0x1) != 0 && countStructureEnemy == 0) {
-			finish = true;
-		}
-		if ((g_scenario.winFlags & 0x2) != 0 && countStructureFriendly == 0) {
-			finish = true;
-		}
-	}
-
-	/* Check for reaching spice quota */
-	if ((g_scenario.winFlags & 0x4) != 0 && g_playerCredits != 0xFFFF) {
-		if (g_playerCredits >= g_playerHouse->creditsQuota) {
-			finish = true;
-		}
-	}
-
-	/* Check for reaching timeout */
-	if ((g_scenario.winFlags & 0x8) != 0) {
-		/* XXX -- This code was with '<' instead of '>=', which makes
-		 *  no sense. As it is unused, who knows what the intentions
-		 *  were. This at least makes it sensible. */
-		if (g_timerGame >= s_tickGameTimeout) {
-			finish = true;
-		}
-	}
-
-	return finish;
+	return true;
 }
 
 /**
@@ -173,7 +118,7 @@ static bool GameLoop_IsLevelWon(void)
 {
 	bool win = false;
 
-	if (s_debugForceWin) return true;
+	return false;
 
 	/* Check for structure counts hitting zero */
 	if ((g_scenario.loseFlags & 0x3) != 0) {
@@ -973,52 +918,28 @@ static void GameLoop_Main(void)
 	g_readBuffer = calloc(1, g_readBufferSize);
 	g_gameMode = GM_PICKHOUSE;
 	
+	g_playerHouseID = HOUSE_ATREIDES;
+	GFX_ClearBlock(SCREEN_0);
+	Sprites_LoadTiles();
+
+			
+	GUI_Palette_CreateRemap(g_playerHouseID);
+
+	GUI_Mouse_Show_Safe();
+
+	g_gameMode = GM_NORMAL;
+	g_strategicRegionBits = 0;
+
+	
+	Music_Play(Tools_RandomLCG_Range(0, 8) + 8);
+	l_timerNext = g_timerGUI + 300;
+
+	Game_LoadScenario(g_playerHouseID, g_scenarioID);
+
+	Input_History_Clear();
+	GUI_ChangeSelectionType( SELECTIONTYPE_STRUCTURE );
 
 	for (;; sleepIdle()) {
-
-		if (g_gameMode == GM_MENU) {
-			GameLoop_GameIntroAnimationMenu();
-
-			if (!g_running) break;
-			if (g_gameMode == GM_MENU) continue;
-
-			GUI_Mouse_Hide_Safe();
-
-			g_canSkipIntro = false;
-
-			GUI_DrawFilledRectangle(g_curWidgetXBase << 3, g_curWidgetYBase, (g_curWidgetXBase + g_curWidgetWidth) << 3, g_curWidgetYBase + g_curWidgetHeight, 12);
-
-			Input_History_Clear();
-
-			if (s_enableLog != 0) Mouse_SetMouseMode((uint8)s_enableLog, "DUNE.LOG");
-
-			GFX_SetPalette(g_palette1);
-
-			GUI_Mouse_Show_Safe();
-		}
-
-		if (g_gameMode == GM_PICKHOUSE) {
-			Music_Play(28);
-
-			g_playerHouseID = HOUSE_ATREIDES;
-
-			//GUI_Mouse_Hide_Safe();
-
-			//GFX_ClearBlock(SCREEN_0);
-
-			//Sprites_LoadTiles();
-
-			//GUI_Palette_CreateRemap(g_playerHouseID);
-
-			//Voice_LoadVoices(g_playerHouseID);
-
-			GUI_Mouse_Show_Safe();
-
-			g_gameMode = GM_RESTART;
-			//g_scenarioID = 1;
-			//g_campaignID = 0;
-			g_strategicRegionBits = 0;
-		}
 
 		if (g_selectionTypeNew != g_selectionType) {
 			GUI_ChangeSelectionType(g_selectionTypeNew);
@@ -1027,17 +948,10 @@ static void GameLoop_Main(void)
 		GUI_PaletteAnimate();
 
 		if (g_gameMode == GM_RESTART) {
-			//GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
 
 			Game_LoadScenario(g_playerHouseID, g_scenarioID);
-			//if (!g_debugScenario && !g_debugSkipDialogs) GUI_Mentat_ShowBriefing();
 
 			g_gameMode = GM_NORMAL;
-
-			GUI_ChangeSelectionType(g_debugScenario ? SELECTIONTYPE_DEBUG : SELECTIONTYPE_STRUCTURE);
-
-			Music_Play(Tools_RandomLCG_Range(0, 8) + 8);
-			l_timerNext = g_timerGUI + 300;
 		}
 
 		if (l_selectionState != g_selectionState) {
@@ -1256,7 +1170,7 @@ void Game_Prepare(void)
 
 		if (u == NULL || !u->o.flags.s.used) t->hasUnit = false;
 		if (s == NULL || !s->o.flags.s.used) t->hasStructure = false;
-		if (t->isUnveiled) Map_UnveilTile(i, g_playerHouseID);
+		Map_UnveilTile(i, g_playerHouseID);
 	}
 
 	find.houseID = HOUSE_INVALID;
@@ -1269,7 +1183,7 @@ void Game_Prepare(void)
 		u = Unit_Find(&find);
 		if (u == NULL) break;
 
-		if (u->o.flags.s.isNotOnMap) continue;
+		//if (u->o.flags.s.isNotOnMap) continue;
 
 		Unit_RemoveFog(u);
 		Unit_UpdateMap(1, u);
