@@ -798,7 +798,7 @@ static ThreadStatus WINAPI MPU_ThreadProc(void *data)
 	Semaphore_Lock(s_mpu_sem);
 	while (!Semaphore_TryLock(s_mpu_sem)) {
 		msleep(s_mpu_usec / 1000);
-		//MPU_Interrupt();
+		MPU_Interrupt();
 	}
 	Semaphore_Unlock(s_mpu_sem);
 	return 0;

@@ -29,7 +29,6 @@
 #include "../unit.h"
 
 #include "../ScS/BotInterface.h"
-
 typedef struct Pathfinder_Data {
 	uint16 packed;                                          /*!< From where we are pathfinding. */
 	 int16 score;                                           /*!< The total score for this route. */
@@ -498,10 +497,8 @@ uint16 Script_Unit_Die(ScriptEngine *script)
 
 	u = g_scriptCurrentUnit;
 	ui = &g_table_unitInfo[u->o.type];
-
 	Bot_Unit_Destroyed( u, 0 );
 	Unit_Remove(u);
-	
 
 	if (ui->movementType != MOVEMENT_WINGER) {
 		uint16 credits;
@@ -641,11 +638,11 @@ uint16 Script_Unit_Fire(ScriptEngine *script)
 
 			if (u2 != NULL) {
 				u2->o.script.variables[1] = 0xFFFF;
+				Bot_Unit_Destroyed( u2, u );
 				Unit_RemovePlayer(u2);
 				Unit_HouseUnitCount_Remove(u2);
 				Unit_Remove(u2);
-
-				Bot_Unit_Destroyed( u2, u );
+				
 			}
 
 			Map_MakeExplosion(ui->explosionType, u->o.position, 0, 0);

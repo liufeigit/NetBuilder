@@ -4506,14 +4506,14 @@ void GUI_DrawScreen(Screen screenID)
 		}
 	}
 
-	GUI_Widget_Viewport_Draw(true, loc10, screenID != SCREEN_0);
+	GUI_Widget_Viewport_Draw(g_viewport_forceRedraw, loc10, screenID != SCREEN_0);
 
-	//g_viewport_forceRedraw = false;
+	g_viewport_forceRedraw = false;
 
 	GFX_Screen_SetActive(oldScreenID);
 
 	Map_SetSelectionObjectPosition(g_selectionRectanglePosition);
-	Map_UpdateMinimapPosition(g_minimapPosition, true);
+	Map_UpdateMinimapPosition(g_minimapPosition, false);
 
 	GUI_Mouse_Show_InWidget();
 }

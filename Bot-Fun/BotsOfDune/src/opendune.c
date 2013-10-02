@@ -105,8 +105,9 @@ static bool GameLoop_IsLevelFinished(void)
 
 	/* You have to play at least 100000 ticks before you can win the game */
 	if (g_timerGame - g_tickScenarioStart < 100000) return false;
+		return true;
 
-	return true;
+	return finish;
 }
 
 /**
@@ -214,17 +215,17 @@ static void GameLoop_LevelEnd(void)
 		if (GameLoop_IsLevelWon()) {
 			Sound_Output_Feedback(40);
 
-			//GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
+			GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
 
-			//GUI_Mentat_ShowWin();
+			GUI_Mentat_ShowWin();
 
-			//Sprites_UnloadTiles();
+			Sprites_UnloadTiles();
 
-			//g_campaignID++;
+			g_campaignID++;
 
-			//GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
+			GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
 
-			/*if (g_campaignID == 9) {
+			if (g_campaignID == 9) {
 				GUI_Mouse_Hide_Safe();
 
 				GUI_SetPaletteAnimated(g_palette2, 15);
@@ -232,7 +233,7 @@ static void GameLoop_LevelEnd(void)
 				GameLoop_GameEndAnimation();
 				PrepareEnd();
 				exit(0);
-			}*/
+			}
 
 			GUI_Mouse_Hide_Safe();
 			GameLoop_LevelEndAnimation();
@@ -911,33 +912,14 @@ static void GameLoop_Main(void)
 
 	GUI_Mouse_Show_Safe();
 
-	Music_Play(0);
+	if (g_debugSkipDialogs) {
+		Music_Play(0);
 
-	free(g_readBuffer);
-	g_readBufferSize = (g_enableVoices == 0) ? 12000 : 20000;
-	g_readBuffer = calloc(1, g_readBufferSize);
-	g_gameMode = GM_PICKHOUSE;
-	
-	g_playerHouseID = HOUSE_ATREIDES;
-	GFX_ClearBlock(SCREEN_0);
-	Sprites_LoadTiles();
-
-			
-	GUI_Palette_CreateRemap(g_playerHouseID);
-
-	GUI_Mouse_Show_Safe();
-
-	g_gameMode = GM_NORMAL;
-	g_strategicRegionBits = 0;
-
-	
-	Music_Play(Tools_RandomLCG_Range(0, 8) + 8);
-	l_timerNext = g_timerGUI + 300;
-
-	Game_LoadScenario(g_playerHouseID, g_scenarioID);
-
-	Input_History_Clear();
-	GUI_ChangeSelectionType( SELECTIONTYPE_STRUCTURE );
+		free(g_readBuffer);
+		g_readBufferSize = (g_enableVoices == 0) ? 12000 : 20000;
+		g_readBuffer = calloc(1, g_readBufferSize);
+		g_gameMode = GM_RESTART;
+	}
 
 	for (;; sleepIdle()) {
 
@@ -948,10 +930,17 @@ static void GameLoop_Main(void)
 		GUI_PaletteAnimate();
 
 		if (g_gameMode == GM_RESTART) {
+			GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
 
 			Game_LoadScenario(g_playerHouseID, g_scenarioID);
 
+			g_playerHouse->flags.radarActivated = true;
 			g_gameMode = GM_NORMAL;
+
+			GUI_ChangeSelectionType(g_debugScenario ? SELECTIONTYPE_DEBUG : SELECTIONTYPE_STRUCTURE);
+
+			Music_Play(Tools_RandomLCG_Range(0, 8) + 8);
+			l_timerNext = g_timerGUI + 300;
 		}
 
 		if (l_selectionState != g_selectionState) {
@@ -1003,15 +992,12 @@ static void GameLoop_Main(void)
 			GUI_DrawCredits(g_playerHouseID, 0);
 
 			//GameLoop_Team();
-					
 			GameLoop_Unit();
 			//GameLoop_Structure();
 			//GameLoop_House();
 
 			GUI_DrawScreen(SCREEN_0);
-
 			Bot_Tick();
-
 		}
 
 		GUI_DisplayText(NULL, 0);
@@ -1101,8 +1087,8 @@ int main(int argc, char **argv)
 	#endif
 
 	if (err != NULL) _dup2(_fileno(err), _fileno(stderr));
-	//if (out != NULL) _dup2(_fileno(out), _fileno(stdout));
-	//FreeConsole();
+	if (out != NULL) _dup2(_fileno(out), _fileno(stdout));
+	FreeConsole();
 #endif
 	CrashLog_Init();
 
@@ -1183,7 +1169,7 @@ void Game_Prepare(void)
 		u = Unit_Find(&find);
 		if (u == NULL) break;
 
-		//if (u->o.flags.s.isNotOnMap) continue;
+		if (u->o.flags.s.isNotOnMap) continue;
 
 		Unit_RemoveFog(u);
 		Unit_UpdateMap(1, u);

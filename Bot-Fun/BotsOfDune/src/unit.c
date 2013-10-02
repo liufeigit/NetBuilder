@@ -63,7 +63,7 @@ int16 g_starportAvailable[UNIT_MAX];
  * @param unit The Unit to operate on.
  * @param level 0 = base, 1 = top (turret etc).
  */
-void Unit_Rotate(Unit *unit, uint16 level)
+static void Unit_Rotate(Unit *unit, uint16 level)
 {
 	int8 target;
 	int8 current;
@@ -179,6 +179,7 @@ void GameLoop_Unit(void)
 
 		u = Unit_Find(&find);
 		if (u == NULL) break;
+
 		if( u->o.type == UNIT_SANDWORM )
 			continue;
 
@@ -463,10 +464,7 @@ Unit *Unit_Create(uint16 index, uint8 typeID, uint8 houseID, tile32 position, in
 	Unit_UpdateMap(1, u);
 
 	Unit_SetAction(u, (houseID == g_playerHouseID) ? ui->o.actionsPlayer[3] : ui->actionAI);
-
-	// Tell the bot engine a unit has spawned
 	Bot_Spawn_Unit( u );
-
 	return u;
 }
 
@@ -757,7 +755,7 @@ uint16 Unit_GetTargetUnitPriority(Unit *unit, Unit *target)
 	if (unit == target) return 0;
 
 	if (!target->o.flags.s.allocated) return 0;
-	//if ((target->o.seenByHouses & (1 << Unit_GetHouseID(unit))) == 0) return 0;
+	if ((target->o.seenByHouses & (1 << Unit_GetHouseID(unit))) == 0) return 0;
 
 	if (House_AreAllied(Unit_GetHouseID(unit), Unit_GetHouseID(target))) return 0;
 
@@ -902,7 +900,6 @@ bool Unit_SetPosition(Unit *u, tile32 position)
  */
 void Unit_Remove(Unit *u)
 {
-	Unit *Origin = 0;
 	if (u == NULL) return;
 
 	Bot_Unit_Remove( u );
@@ -1313,14 +1310,14 @@ bool Unit_Move(Unit *unit, uint16 distance)
 
 	if (!Tile_IsValid(newPosition)) {
 		if (!ui->flags.mustStayInMap) {
-			Unit_Remove(unit);
 			Bot_Unit_Destroyed( unit, 0 );
+			Unit_Remove(unit);
 			return true;
 		}
 
 		if (unit->o.flags.s.byScenario && unit->o.linkedID == 0xFF && unit->o.script.variables[4] == 0) {
-			Unit_Remove(unit);
 			Bot_Unit_Destroyed( unit, 0 );
+			Unit_Remove(unit);
 			return true;
 		}
 
@@ -1471,7 +1468,6 @@ bool Unit_Move(Unit *unit, uint16 distance)
 
 				if (unit->o.flags.s.degrades && (Tools_Random_256() & 3) == 0) {
 					Unit_Damage(unit, 1, 0);
-					Bot_Unit_Damage_Natural( unit );
 				}
 
 				if (unit->o.type == UNIT_SABOTEUR) {
@@ -1567,7 +1563,7 @@ bool Unit_Damage(Unit *unit, uint16 damage, uint16 range)
 	} else {
 		unit->o.hitpoints = 0;
 	}
-	
+
 	Unit_Deviation_Decrease(unit, 0);
 
 	houseID = Unit_GetHouseID(unit);
@@ -1865,7 +1861,7 @@ uint16 Unit_FindTargetAround(uint16 packed)
 
 	if (g_selectionType == SELECTIONTYPE_PLACE) return packed;
 
-	//if (Structure_Get_ByPackedTile(packed) != NULL) return packed;
+	if (Structure_Get_ByPackedTile(packed) != NULL) return packed;
 
 	if (Map_GetLandscapeType(packed) == LST_BLOOM_FIELD) return packed;
 

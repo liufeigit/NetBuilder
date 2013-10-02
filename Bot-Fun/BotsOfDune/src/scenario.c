@@ -24,7 +24,6 @@
 #include "timer.h"
 #include "unit.h"
 #include "gui/gui.h"
-
 #include "ScS\BotInterface.h"
 
 Scenario g_scenario;
@@ -182,7 +181,7 @@ static void Scenario_Load_Unit(const char *key, char *settings)
 	u->o.hitpoints   = hitpoints * g_table_unitInfo[unitType].o.hitpoints / 256;
 	u->o.position    = position;
 	u->orientation[0].current = orientation;
-	u->actionID     = ACTION_GUARD;
+	u->actionID     = actionType;
 	u->nextActionID = ACTION_INVALID;
 
 	/* In case the above function failed and we are passed campaign 2, don't add the unit */
@@ -329,9 +328,9 @@ static void Scenario_Load_Map_Field(uint16 packed, Tile *t)
 	Map_Bloom_ExplodeSpice(packed, HOUSE_INVALID);
 
 	/* Show where a field started in the preview mode by making it an odd looking sprite */
-	//if (g_debugScenario) {
+	if (g_debugScenario) {
 		t->groundSpriteID = 0x01FF;
-	//}
+	}
 }
 
 static void Scenario_Load_Map_Special(uint16 packed, Tile *t)

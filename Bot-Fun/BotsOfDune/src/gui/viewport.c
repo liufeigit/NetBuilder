@@ -29,6 +29,7 @@
 #include "../timer.h"
 #include "../tools.h"
 #include "../unit.h"
+
 #include "../ScS/BotInterface.h"
 
 static uint32 s_tickCursor;                                 /*!< Stores last time Viewport changed the cursor spriteID. */
@@ -196,9 +197,98 @@ bool GUI_Widget_Viewport_Click(Widget *w)
 		return true;
 	}
 
+	if (click && g_selectionType == SELECTIONTYPE_PLACE) {
+		const StructureInfo *si;
+		Structure *s;
+		House *h;
+
+		s = g_structureActive;
+		si = &g_table_structureInfo[g_structureActiveType];
+		h = g_playerHouse;
+
+		if (Structure_Place(s, g_selectionPosition)) {
+			Voice_Play(20);
+
+			if (s->o.type == STRUCTURE_PALACE) House_Get_ByIndex(s->o.houseID)->palacePosition = s->o.position;
+
+			if (g_structureActiveType == STRUCTURE_REFINERY && g_validateStrictIfZero == 0) {
+				Unit *u;
+
+				g_validateStrictIfZero++;
+				u = Unit_CreateWrapper(g_playerHouseID, UNIT_HARVESTER, Tools_Index_Encode(s->o.index, IT_STRUCTURE));
+				g_validateStrictIfZero--;
+
+				if (u == NULL) {
+					h->harvestersIncoming++;
+				} else {
+					u->originEncoded = Tools_Index_Encode(s->o.index, IT_STRUCTURE);
+				}
+			}
+
+			GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
+
+			s = Structure_Get_ByPackedTile(g_structureActivePosition);
+			if (s != NULL) {
+				if ((Structure_GetBuildable(s) & (1 << s->objectType)) == 0) Structure_BuildObject(s, 0xFFFE);
+			}
+
+			g_structureActiveType = 0xFFFF;
+			g_structureActive     = NULL;
+			g_selectionState      = 0; /* Invalid. */
+
+			GUI_DisplayHint(si->o.hintStringID, si->o.spriteID);
+
+			House_UpdateRadarState(h);
+
+			if (h->powerProduction < h->powerUsage) {
+				if ((h->structuresBuilt & (1 << STRUCTURE_OUTPOST)) != 0) {
+					GUI_DisplayText(String_Get_ByIndex(STR_NOT_ENOUGH_POWER_FOR_RADAR_BUILD_WINDTRAPS), 3);
+				}
+			}
+			return true;
+		}
+
+		Voice_Play(47);
+
+		if (g_structureActiveType == STRUCTURE_SLAB_1x1 || g_structureActiveType == STRUCTURE_SLAB_2x2) {
+			GUI_DisplayText(String_Get_ByIndex(STR_CAN_NOT_PLACE_FOUNDATION_HERE), 2);
+		} else {
+			GUI_DisplayHint(STR_STRUCTURES_MUST_BE_PLACED_ON_CLEAR_ROCK_OR_CONCRETE_AND_ADJACENT_TO_ANOTHER_FRIENDLY_STRUCTURE, 0xFFFF);
+			GUI_DisplayText(String_Get_ByIndex(STR_CAN_NOT_PLACE_S_HERE), 2, String_Get_ByIndex(si->o.stringID_abbrev));
+		}
+		return true;
+	}
+
+	if (click && w->index == 43) {
+		uint16 position;
+
+		if (g_debugScenario) {
+			position = packed;
+		} else {
+			position = Unit_FindTargetAround(packed);
+		}
+
+		if (g_map[position].overlaySpriteID != g_veiledSpriteID || g_debugScenario) {
+			if (Object_GetByPackedTile(position) != NULL || g_debugScenario) {
+				Map_SetSelection(position);
+				Unit_DisplayStatusText(g_unitSelected);
+			}
+		}
+
+		if ((w->state.buttonState & 0x10) != 0) Map_SetViewportPosition(packed);
+
+		return true;
+	}
+
 	if ((click || drag) && w->index == 44) {
 		Map_SetViewportPosition(packed);
 		return true;
+	}
+
+	if (g_selectionType == SELECTIONTYPE_TARGET) {
+		Map_SetSelection(Unit_FindTargetAround(packed));
+	} else if (g_selectionType == SELECTIONTYPE_PLACE) {
+		Map_SetSelection(packed);
 	}
 
 	return true;
@@ -288,7 +378,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 					updateDisplay = true;
 				}
 
-				//if (!BitArray_Test(g_dirtyMinimap, curPos) && !forceRedraw) continue;
+				if (!BitArray_Test(g_dirtyMinimap, curPos) && !forceRedraw) continue;
 
 				BitArray_Set(g_dirtyViewport, curPos);
 
@@ -301,11 +391,14 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 				t = &g_map[curPos];
 				left = x << 4;
 
-
+				if (!g_debugScenario && g_veiledSpriteID == t->overlaySpriteID) {
+					GUI_DrawFilledRectangle(left, top, left + 15, top + 15, 12);
+					continue;
+				}
 
 				GFX_DrawSprite(t->groundSpriteID, left, top, t->houseID);
 
-				 continue;
+				if (t->overlaySpriteID == 0 || g_debugScenario) continue;
 
 				GFX_DrawSprite(t->overlaySpriteID, left, top, t->houseID);
 			}
@@ -326,8 +419,9 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 		if (u == NULL) break;
 
 		if (!u->o.flags.s.isDirty && !forceRedraw) continue;
-		u->o.flags.s.isDirty = true;
+		u->o.flags.s.isDirty = false;
 
+		if (!g_map[Tile_PackTile(u->o.position)].isUnveiled && !g_debugScenario) continue;
 
 		sprite = GUI_Widget_Viewport_Draw_GetSprite(g_table_unitInfo[u->o.type].groundSpriteID, Unit_GetHouseID(u));
 
@@ -388,7 +482,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 			if ((!u->o.flags.s.isDirty || u->o.flags.s.isNotOnMap) && !forceRedraw && !BitArray_Test(g_dirtyViewport, packed)) continue;
 			u->o.flags.s.isDirty = false;
 
-			//if (!g_map[packed].isUnveiled && !g_debugScenario) continue;
+			if (!g_map[packed].isUnveiled && !g_debugScenario) continue;
 
 			ui = &g_table_unitInfo[u->o.type];
 
@@ -529,6 +623,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 
 		e->isDirty = false;
 
+		if (!g_map[curPos].isUnveiled && !g_debugScenario) continue;
 		if (!Map_IsPositionInViewport(e->position, &x, &y)) continue;
 
 		s_spriteFlags = 0xC000;
@@ -564,7 +659,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 			if ((!u->o.flags.s.isDirty || u->o.flags.s.isNotOnMap) && !forceRedraw && !BitArray_Test(g_dirtyViewport, curPos)) continue;
 			u->o.flags.s.isDirty = false;
 
-			//if (!g_map[curPos].isUnveiled && !g_debugScenario) continue;
+			if (!g_map[curPos].isUnveiled && !g_debugScenario) continue;
 
 			ui = &g_table_unitInfo[u->o.type];
 
@@ -763,11 +858,11 @@ void GUI_Widget_Viewport_DrawTile(uint16 packed)
 
 	mapScale = g_scenario.mapScale + 1;
 
-	//if (mapScale == 0 || BitArray_Test(g_displayedMinimap, packed)) return;
+	if (mapScale == 0 || BitArray_Test(g_displayedMinimap, packed)) return;
 
 	t = &g_map[packed];
 
-	{
+	if ((t->isUnveiled && g_playerHouse->flags.radarActivated) || g_debugScenario) {
 		uint16 type = Map_GetLandscapeType(packed);
 		Unit *u;
 
@@ -802,6 +897,24 @@ void GUI_Widget_Viewport_DrawTile(uint16 packed)
 				}
 			}
 		}
+	} else {
+		Structure *s;
+
+		s = Structure_Get_ByPackedTile(packed);
+
+		if (s != NULL && s->o.houseID == g_playerHouseID) {
+			if (mapScale > 1) {
+				spriteID = mapScale + s->o.houseID * 2 + 29;
+			} else {
+				colour = g_table_houseInfo[s->o.houseID].minimapColor;
+			}
+		} else {
+			if (mapScale > 1) {
+				spriteID = g_scenario.mapScale + g_table_landscapeInfo[LST_ENTIRELY_MOUNTAIN].spriteID - 1;
+			} else {
+				colour = 12;
+			}
+		}
 	}
 
 	x -= g_mapInfos[g_scenario.mapScale].minX;
@@ -813,7 +926,6 @@ void GUI_Widget_Viewport_DrawTile(uint16 packed)
 		GUI_DrawSprite(g_screenActiveID, g_sprites[spriteID], x, y, 3, 0x4000);
 	} else {
 		GFX_PutPixel(x + 256, y + 136, colour & 0xFF);
-
 		Bot_Map_Update( x, y, colour & 0xFF );
 	}
 }

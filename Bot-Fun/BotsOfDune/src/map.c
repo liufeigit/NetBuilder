@@ -30,7 +30,7 @@
 #include "tile.h"
 #include "unit.h"
 #include "file.h"
-#include "ScS/BotInterface.h"
+
 
 uint16 g_mapSpriteID[64 * 64];
 Tile g_map[64 * 64];                                        /*!< All map data. */
@@ -114,9 +114,9 @@ void Map_SetSelection(uint16 packed)
 			const StructureInfo *si;
 
 			si = &g_table_structureInfo[s->o.type];
-			//if (s->o.houseID == g_playerHouseID && g_selectionType != SELECTIONTYPE_MENTAT) {
-			//	GUI_DisplayHint(si->o.hintStringID, si->o.spriteID);
-			//}
+			if (s->o.houseID == g_playerHouseID && g_selectionType != SELECTIONTYPE_MENTAT) {
+				GUI_DisplayHint(si->o.hintStringID, si->o.spriteID);
+			}
 
 			packed = Tile_PackTile(s->o.position);
 
@@ -342,12 +342,11 @@ bool Map_IsPositionUnveiled(uint16 position)
 {
 	Tile *t;
 
-	// force minimap
-	return true;
+	if (g_debugScenario) return true;
 
 	t = &g_map[position];
 
-	if (!t->isUnveiled) return true;
+	if (!t->isUnveiled) return false;
 	if (!Sprite_IsUnveiled(t->overlaySpriteID)) return false;
 
 	return true;
@@ -419,7 +418,6 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 			Unit *u;
 			Unit *us;
 			Unit *attack;
-			Unit *Origin = Unit_Get_ByIndex( Tools_Index_Decode( unitOriginEncoded ) );
 
 			u = Unit_Find(&find);
 			if (u == NULL) break;
@@ -431,8 +429,6 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 
 			if (!(u->o.type == UNIT_SANDWORM && type == EXPLOSION_SANDWORM_SWALLOW) && u->o.type != UNIT_FRIGATE) {
 				Unit_Damage(u, hitpoints >> (distance >> 2), 0);
-				
-				Bot_Unit_Damage( u, Origin, hitpoints >> (distance >> 2) );
 			}
 
 			if (u->o.houseID == g_playerHouseID) continue;
@@ -449,7 +445,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 
 				if (t->action == TEAM_ACTION_STAGING) {
 					Unit_RemoveFromTeam(u);
-					//Unit_SetAction(u, ACTION_HUNT);
+					Unit_SetAction(u, ACTION_HUNT);
 					continue;
 				}
 
@@ -474,7 +470,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 			if (ui->bulletType == UNIT_INVALID) continue;
 
 			if (u->actionID == ACTION_GUARD && u->o.flags.s.byScenario) {
-				//Unit_SetAction(u, ACTION_HUNT);
+				Unit_SetAction(u, ACTION_HUNT);
 			}
 
 			if (u->targetAttack != 0 && u->actionID != ACTION_HUNT) continue;
@@ -612,7 +608,7 @@ void Map_Update(uint16 packed, uint16 type, bool ignoreInvisible)
 		0
 	};
 
-	//if (!ignoreInvisible && !Map_IsTileVisible(packed)) return;
+	if (!ignoreInvisible && !Map_IsTileVisible(packed)) return;
 
 	switch (type) {
 		default:
@@ -897,7 +893,7 @@ void Map_Bloom_ExplodeSpecial(uint16 packed, uint8 houseID)
 			/* ENHANCEMENT -- Dune2 inverted houseID and typeID arguments. */
 			u = Unit_Create(UNIT_INDEX_INVALID, UNIT_TRIKE, enemyHouseID, position, Tools_Random_256());
 
-			//if (u != NULL) Unit_SetAction(u, ACTION_HUNT);
+			if (u != NULL) Unit_SetAction(u, ACTION_HUNT);
 			break;
 		}
 
@@ -910,7 +906,7 @@ void Map_Bloom_ExplodeSpecial(uint16 packed, uint8 houseID)
 			/* ENHANCEMENT -- Dune2 inverted houseID and typeID arguments. */
 			u = Unit_Create(UNIT_INDEX_INVALID, UNIT_INFANTRY, enemyHouseID, position, Tools_Random_256());
 
-			//if (u != NULL) Unit_SetAction(u, ACTION_HUNT);
+			if (u != NULL) Unit_SetAction(u, ACTION_HUNT);
 			break;
 		}
 
@@ -1674,7 +1670,7 @@ void Map_CreateLandscape(uint32 seed)
 		t->groundSpriteID  = iconMap[t->groundSpriteID];
 		t->overlaySpriteID = g_veiledSpriteID;
 		t->houseID         = HOUSE_HARKONNEN;
-		t->isUnveiled      = true;
+		t->isUnveiled      = false;
 		t->hasUnit         = false;
 		t->hasStructure    = false;
 		t->hasAnimation    = false;
