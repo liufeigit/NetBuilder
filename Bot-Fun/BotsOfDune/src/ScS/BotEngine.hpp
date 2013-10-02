@@ -98,6 +98,11 @@ struct sTrainingSet {
 
 
 		mData.push_back( new sTrainingData( Wall, 0, 0, 1, 1 , 0 ) );
+		mData.push_back( new sTrainingData( Wall, 0, 0, 0, 1 , 0 ) );
+		mData.push_back( new sTrainingData( Wall, 0, 0, 1, 0 , 0 ) );
+
+		mData.push_back( new sTrainingData( Rocks, 0, 0, 1, 1, 0 ) );
+		mData.push_back( new sTrainingData( Sand,  0, 0, 1, 1, 0 ) );
 
 		mData.push_back( new sTrainingData( Rocks, 0, 1, 0, 0, 0 ) );
 		mData.push_back( new sTrainingData( Sand,  0, 1, 0, 0, 0 ) );
